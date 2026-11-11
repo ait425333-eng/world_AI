@@ -67,7 +67,7 @@ describe('getVariantPanelCategories', () => {
   // The mobile nav and the settings filter both depend on this curation.
   it('variant defaults yield the curated category set, free of duplicate labels', () => {
     const expected: Record<string, string[]> = {
-      full: ['core', 'intelligence', 'correlation', 'regionalNews', 'marketsFinance', 'topical', 'dataTracking'],
+      full: ['core', 'intelligence', 'correlation', 'regionalNews', 'marketsFinance', 'topical', 'domains', 'dataTracking'],
       tech: ['core', 'techAi', 'startupsVc', 'securityPolicy', 'techMarkets'],
       finance: ['core', 'finMarkets', 'fixedIncomeFx', 'finCommodities', 'cryptoDigital', 'centralBanksEcon', 'dealsInstitutional', 'gulfMena'],
       commodity: ['core', 'commodityPrices', 'miningIndustry', 'commodityEcon'],

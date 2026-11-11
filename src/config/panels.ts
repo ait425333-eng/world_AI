@@ -138,6 +138,13 @@ const FULL_PANELS: Record<string, PanelConfig> = {
   'deduction': { name: 'Deduct Situation', enabled: false, priority: 1, premium: 'locked' as const },
   'geo-hubs': { name: 'Geopolitical Hubs', enabled: false, priority: 2 },
   'tech-hubs': { name: 'Hot Tech Hubs', enabled: false, priority: 2 },
+  'domain-political': { name: 'Political', enabled: true, priority: 2 },
+  'domain-diplomatic': { name: 'Diplomatic', enabled: true, priority: 2 },
+  'domain-international': { name: 'International', enabled: true, priority: 2 },
+  'domain-cyber': { name: 'Cyber', enabled: true, priority: 2 },
+  'domain-economy': { name: 'Economy', enabled: true, priority: 2 },
+  'domain-tech': { name: 'Technological', enabled: true, priority: 2 },
+  'domain-health': { name: 'Health & Env', enabled: true, priority: 2 },
 };
 
 const FULL_MAP_LAYERS: MapLayers = {
@@ -1539,6 +1546,19 @@ export const PANEL_CATEGORY_MAP: Record<string, { labelKey: string; panelKeys: s
     labelKey: 'header.panelCatTopical',
     panelKeys: ['energy', 'gov', 'thinktanks', 'tech', 'ai', 'layoffs', 'science'],
     variants: ['full', 'energy'],
+  },
+  domains: {
+    labelKey: 'header.panelCatDomains',
+    panelKeys: [
+      'domain-political',
+      'domain-diplomatic',
+      'domain-international',
+      'domain-cyber',
+      'domain-economy',
+      'domain-tech',
+      'domain-health',
+    ],
+    variants: ['full'],
   },
   dataTracking: {
     labelKey: 'header.panelCatDataTracking',

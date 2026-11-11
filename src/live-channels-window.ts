@@ -28,8 +28,30 @@ import { setTrustedHtml, trustedHtml } from '@/utils/dom-utils';
 function customChannelFor(candidate: Candidate, name: string, current?: LiveChannel): LiveChannel {
   if (candidate.kind === 'channel') return { id: `custom-uc-${candidate.channelId}`, name, channelId: candidate.channelId };
   if (candidate.kind === 'video') return { id: `custom-vid-${candidate.videoId}`, name, videoId: candidate.videoId };
+  if (candidate.kind === 'file') {
+    const file = candidate.url.split('/').pop() ?? candidate.url;
+    return {
+      id: `custom-file-${file}`,
+      name,
+      fileUrl: candidate.url,
+    };
+  }
   const id = current?.id.startsWith('custom-hls-') ? current.id : `custom-hls-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   return { id, name, hlsUrl: candidate.url };
+}
+
+interface LocalVideoItem {
+  file: string;
+  name: string;
+  url: string;
+}
+
+function localVideoChannel(item: LocalVideoItem): LiveChannel {
+  return {
+    id: `custom-file-${item.file}`,
+    name: item.name,
+    fileUrl: item.url,
+  };
 }
 
 /** What to paste instead of a source that cannot play: an https stream for an http one, else a channel or video URL. */
@@ -157,6 +179,8 @@ export async function initLiveChannelsWindow(containerEl?: HTMLElement): Promise
         channels = channels.filter((c) => c.id !== ch.id);
         saveChannelsToStorage(channels);
         renderList(listEl);
+        renderAvailableChannels(listEl);
+        renderLocalVideos();
       });
       row.appendChild(removeX);
 
@@ -450,6 +474,11 @@ export async function initLiveChannelsWindow(containerEl?: HTMLElement): Promise
           <div class="panel-tabs" id="liveChannelsTabBar"></div>
           <div class="live-news-manage-tab-contents" id="liveChannelsTabContents"></div>
         </div>
+        <div class="live-news-manage-add-section" id="liveChannelsLocalSection">
+          <span class="live-news-manage-add-title">Local videos</span>
+          <p class="live-news-manage-hint" id="liveChannelsLocalHint">Videos from the project <code>videos/</code> folder</p>
+          <div class="live-news-manage-local-grid" id="liveChannelsLocalGrid"></div>
+        </div>
         <div class="live-news-manage-add-section">
           <span class="live-news-manage-add-title">${escapeHtml(t('components.liveNews.customChannel') ?? 'Custom channel')}</span>
           <div class="live-news-manage-add">
@@ -475,9 +504,88 @@ export async function initLiveChannelsWindow(containerEl?: HTMLElement): Promise
 
   const listEl = document.getElementById('liveChannelsList');
   if (!listEl) return;
+
+  let localVideos: LocalVideoItem[] = [];
+
+  function renderLocalVideos(): void {
+    const grid = document.getElementById('liveChannelsLocalGrid');
+    const hint = document.getElementById('liveChannelsLocalHint');
+    if (!grid) return;
+    grid.replaceChildren();
+    if (localVideos.length === 0) {
+      if (hint) {
+        hint.textContent = 'No .mp4 files found in videos/ (dev server must be running).';
+        hint.hidden = false;
+      }
+      return;
+    }
+    if (hint) {
+      hint.textContent = 'Videos from the project videos/ folder — click to add or remove.';
+      hint.hidden = false;
+    }
+    for (const item of localVideos) {
+      const ch = localVideoChannel(item);
+      const isAdded = channels.some((c) => c.id === ch.id || c.fileUrl === ch.fileUrl);
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = `live-news-manage-card${isAdded ? ' added' : ''}`;
+      card.setAttribute('aria-pressed', isAdded ? 'true' : 'false');
+
+      const icon = document.createElement('span');
+      icon.className = 'live-news-manage-card-icon';
+      icon.textContent = '▶';
+
+      const info = document.createElement('span');
+      info.className = 'live-news-manage-card-info';
+      const nameEl = document.createElement('span');
+      nameEl.className = 'live-news-manage-card-name';
+      nameEl.textContent = item.name;
+      const handleEl = document.createElement('span');
+      handleEl.className = 'live-news-manage-card-handle';
+      handleEl.textContent = item.file;
+      info.appendChild(nameEl);
+      info.appendChild(handleEl);
+
+      const action = document.createElement('span');
+      action.className = 'live-news-manage-card-action';
+      action.textContent = isAdded ? '✓' : '+';
+
+      card.appendChild(icon);
+      card.appendChild(info);
+      card.appendChild(action);
+      card.addEventListener('click', () => {
+        if (isAdded) {
+          channels = channels.filter((c) => c.id !== ch.id && c.fileUrl !== ch.fileUrl);
+        } else if (!channels.some((c) => c.id === ch.id)) {
+          channels.push(ch);
+        }
+        saveChannelsToStorage(channels);
+        renderList(listEl);
+        renderAvailableChannels(listEl);
+        renderLocalVideos();
+      });
+      grid.appendChild(card);
+    }
+  }
+
   setupListDnD(listEl);
   renderList(listEl);
   renderAvailableChannels(listEl);
+  renderLocalVideos();
+
+  void fetch(toApiUrl('/api/local-videos'))
+    .then(async (res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json() as Promise<{ videos?: LocalVideoItem[] }>;
+    })
+    .then((data) => {
+      localVideos = Array.isArray(data.videos) ? data.videos : [];
+      renderLocalVideos();
+    })
+    .catch(() => {
+      localVideos = [];
+      renderLocalVideos();
+    });
 
   const sourceHint = document.getElementById('liveChannelsHandleHint');
   const hideSourceHint = () => {

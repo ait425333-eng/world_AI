@@ -457,6 +457,7 @@
     "panelCatRegionalNews": "Regional News",
     "panelCatMarketsFinance": "Markets & Finance",
     "panelCatTopical": "Topical",
+    "panelCatDomains": "Domains",
     "panelCatDataTracking": "Data & Tracking",
     "panelCatTechAi": "Tech & AI",
     "panelCatStartupsVc": "Startups & Venture capital",
@@ -583,7 +584,14 @@
     "marketBreadth": "Market Breadth",
     "climateNews": "Climate News",
     "fx": "Foreign exchange rates",
-    "ukmtoIncidents": "UKMTO Incidents"
+    "ukmtoIncidents": "UKMTO Incidents",
+    "domainPolitical": "Political",
+    "domainDiplomatic": "Diplomatic",
+    "domainInternational": "International",
+    "domainCyber": "Cyber",
+    "domainEconomy": "Economy",
+    "domainTech": "Technological",
+    "domainHealth": "Health & Env"
   },
   "panelVariants": {
     "finance": {
@@ -2525,6 +2533,27 @@
     "climateNews": {
       "infoTooltip": "<strong>Climate News</strong> Latest environment and climate intelligence from Carbon Brief, UNEP, NASA, The Guardian, and other authoritative sources. Updated every 30 minutes.",
       "loadError": "Climate news temporarily unavailable"
+    },
+    "domainPolitical": {
+      "infoTooltip": "<strong>Political</strong> Domestic politics, legislation, elections, and government authority signals."
+    },
+    "domainDiplomatic": {
+      "infoTooltip": "<strong>Diplomatic</strong> Embassy actions, demarches, summits, and bilateral protest signals."
+    },
+    "domainInternational": {
+      "infoTooltip": "<strong>International</strong> Multilateral institutions, treaties, and cross-border governance developments."
+    },
+    "domainCyber": {
+      "infoTooltip": "<strong>Cyber</strong> Intrusions, ransomware, infrastructure attacks, and defensive cyber alerts."
+    },
+    "domainEconomy": {
+      "infoTooltip": "<strong>Economy</strong> Monetary policy, inflation, markets, and macro stress headlines."
+    },
+    "domainTech": {
+      "infoTooltip": "<strong>Technological</strong> Innovation policy, AI regulation, and dual-use technology developments."
+    },
+    "domainHealth": {
+      "infoTooltip": "<strong>Health &amp; Env</strong> Outbreaks, public health alerts, and environmental risk signals."
     },
     "chatAnalyst": {
       "infoTooltip": "<strong>WM Analyst</strong> AI analyst with live context across geopolitical, market, military, and economic domains. Powered by Claude with real-time data injected from active WorldMonitor feeds."

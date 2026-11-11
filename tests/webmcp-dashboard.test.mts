@@ -39,7 +39,7 @@ const EXPECTED_VARIANT_PANEL_SNAPSHOTS: Record<DashboardVariant, {
   enabledCount: number;
   enabledSha256: string;
 }> = {
-  full: { enabledCount: 87, enabledSha256: 'f88a8223a3b1ae42a80a9a4d55678b4e0dbaf942632408fe0987e3a956bd5372' },
+  full: { enabledCount: 94, enabledSha256: '924af0171b97b07a89214af5213e5beedc4a3154549ca49e93bbc6789f3ce0a0' },
   tech: { enabledCount: 38, enabledSha256: 'de9f78179aa2c75301883511ad0bab48fc67cba5cd4eb4445906abf17458a290' },
   finance: { enabledCount: 60, enabledSha256: 'e9cbe30455e107add242019de29d44335abf9da2a8a44c9c204076ed279bcfe8' },
   commodity: { enabledCount: 33, enabledSha256: 'b534510a2e814392e3966beb211e300e75a2b33f05c283613dd4f6cee50ddfe0' },
@@ -52,7 +52,7 @@ const EXPECTED_VARIANT_DEFAULT_SNAPSHOTS: Record<DashboardVariant, {
   enabled: number;
   sha256: string;
 }> = {
-  full: { total: 112, enabled: 87, sha256: '20fc1772047c653d78a2aa4ca8bb85372b117ab972e8af1d07686a29bd3d8bc0' },
+  full: { total: 119, enabled: 94, sha256: 'b007528a0a457caaf5c3f50633576565ee6bd9e07981db23e3d6f6874929c6f6' },
   tech: { total: 41, enabled: 38, sha256: '43d7c788ff599baae171f7f46532653370e03ca4d322a8e6614f9f0a1cee5045' },
   finance: { total: 69, enabled: 60, sha256: 'bb4ad5038f29080ee1631ebce59596da8ef9ae6f88932f0a4e06b1087be141b7' },
   commodity: { total: 36, enabled: 33, sha256: 'cc9e0b178dec33dff354a1eea95b5b215302fc7ce685b3d92b82a356df6d6bee' },
@@ -221,7 +221,7 @@ describe('WebMCP live dashboard bindings', () => {
     const entitled = listWebMcpDashboardPanels(ctx, 'full', { variant: 'full', limit: 8 }, {
       isPanelAllowed: () => true,
     });
-    assert.equal(entitled.total, 112);
+    assert.equal(entitled.total, 119);
     assert.equal(entitled.variant, 'full');
     assert.equal(entitled.hasMore, true);
 
@@ -251,7 +251,7 @@ describe('WebMCP live dashboard bindings', () => {
       cursor = page.nextCursor;
     }
     const ids = pages.flatMap((page) => page.panels.map((panel) => panel.id));
-    assert.equal(new Set(ids).size, 112);
+    assert.equal(new Set(ids).size, 119);
     assert.ok(ids.includes('windy-webcams'));
 
     const gatedPages = [];

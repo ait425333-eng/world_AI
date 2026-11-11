@@ -735,8 +735,8 @@ export class EventHandlerManager implements AppModule {
       }
     });
 
-    document.getElementById('embedLinkBtn')?.addEventListener('click', () => {
-      this.openEmbedDialog();
+    document.getElementById('headerUploadBtn')?.addEventListener('click', () => {
+      document.getElementById('headerUploadInput')?.click();
     });
 
     this.initDownloadDropdown();
@@ -2443,17 +2443,17 @@ export class EventHandlerManager implements AppModule {
     const modal = new AuthLauncher();
     this.ctx.authModal = modal;
 
-    // The standalone gear remains available to every user. Signed-in users
-    // also get explicit Settings and Plan & billing destinations inside the
-    // avatar menu, keeping account and subscription actions in one place.
-    const widget = new AuthHeaderWidget(
-      () => modal.open(),
-      () => this.ctx.unifiedSettings?.open('settings'),
-      () => this.ctx.unifiedSettings?.open('billing'),
-    );
-    this.ctx.authHeaderWidget = widget;
+    // Header Sign In / Create account replaced by UPLOAD. Keep AuthLauncher
+    // for mobile menu and gated flows; only mount the header widget if a
+    // mount node is still present.
     const mount = document.getElementById('authWidgetMount');
     if (mount) {
+      const widget = new AuthHeaderWidget(
+        () => modal.open(),
+        () => this.ctx.unifiedSettings?.open('settings'),
+        () => this.ctx.unifiedSettings?.open('billing'),
+      );
+      this.ctx.authHeaderWidget = widget;
       mount.appendChild(widget.getElement());
     }
 

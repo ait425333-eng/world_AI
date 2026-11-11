@@ -3487,6 +3487,100 @@ a.hub-top-story {
   text-decoration: underline;
 }
 
+/* Domain feed panels (Settings → Domains) */
+.domain-feed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px 8px;
+}
+
+.domain-feed-card {
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-subtle, #2a2f3a);
+  border-inline-start: 4px solid #6b7280;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.domain-feed-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.domain-feed-card--political { border-inline-start-color: #ef4444; }
+.domain-feed-card--diplomatic { border-inline-start-color: #8b5cf6; }
+.domain-feed-card--international { border-inline-start-color: #3b82f6; }
+.domain-feed-card--cyber { border-inline-start-color: #10b981; }
+.domain-feed-card--economy { border-inline-start-color: #f59e0b; }
+.domain-feed-card--tech { border-inline-start-color: #6366f1; }
+.domain-feed-card--health { border-inline-start-color: #14b8a6; }
+
+.domain-feed-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: calc(10px * var(--wm-panel-effective-scale, 1));
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.domain-feed-tag {
+  padding: 2px 6px;
+  border: 1px solid var(--border-subtle, #4b5563);
+  border-radius: 3px;
+  letter-spacing: 0.4px;
+}
+
+.domain-feed-tag--political { color: #ef4444; border-color: #ef4444; }
+.domain-feed-tag--diplomatic { color: #8b5cf6; border-color: #8b5cf6; }
+.domain-feed-tag--international { color: #3b82f6; border-color: #3b82f6; }
+.domain-feed-tag--cyber { color: #10b981; border-color: #10b981; }
+.domain-feed-tag--economy { color: #f59e0b; border-color: #f59e0b; }
+.domain-feed-tag--tech { color: #818cf8; border-color: #6366f1; }
+.domain-feed-tag--health { color: #14b8a6; border-color: #14b8a6; }
+
+.domain-feed-badge {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted, #9ca3af);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: calc(9px * var(--wm-panel-effective-scale, 1));
+}
+
+.domain-feed-badge--new {
+  background: rgba(16, 185, 129, 0.25);
+  color: #6ee7b7;
+}
+
+.domain-feed-headline {
+  font-size: calc(13px * var(--wm-panel-effective-scale, 1));
+  line-height: 1.45;
+  font-weight: 700;
+  color: var(--text, #e5e7eb);
+  margin: 0;
+}
+
+.domain-feed-summary {
+  font-size: calc(12px * var(--wm-panel-effective-scale, 1));
+  line-height: 1.45;
+  color: var(--text-muted, #9ca3af);
+  margin: 0;
+}
+
+.domain-feed-footer {
+  display: flex;
+  justify-content: flex-end;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: calc(10px * var(--wm-panel-effective-scale, 1));
+  color: var(--text-faint, #6b7280);
+}
+
 /* Climate News Panel */
 .climate-news-list {
   display: flex;

@@ -429,6 +429,65 @@ function mountYouTubeSidecar(container: HTMLElement, candidate: YouTubeCandidate
   };
 }
 
+/** Same-origin local mp4 from `/videos/` (Manage Channels local folder). */
+function mountFile(container: HTMLElement, candidate: Extract<Candidate, { kind: 'file' }>, context: TransportContext): Transport {
+  const video = document.createElement('video');
+  video.className = context.presentation.className;
+  video.title = context.presentation.title;
+  video.muted = context.muted;
+  video.autoplay = context.autoplay;
+  video.playsInline = true;
+  video.controls = context.presentation.controls;
+  video.loop = true;
+  video.preload = 'auto';
+  let destroyed = false;
+  let ready = false;
+  let failure: { readonly kind: 'fatal'; readonly detail: string } | null = null;
+  let reportedMuted = context.muted;
+
+  const fail = (detail: string) => {
+    if (destroyed || failure) return;
+    failure = { kind: 'fatal', detail };
+    context.onLiveLost();
+  };
+
+  video.addEventListener('loadedmetadata', () => {
+    if (!destroyed) ready = true;
+    context.onAudioAvailabilityChange?.('available');
+  });
+  video.addEventListener('error', () => fail('media-error'));
+  video.addEventListener('play', () => { if (!destroyed) context.onPlayingChange(true); });
+  video.addEventListener('pause', () => { if (!destroyed) context.onPlayingChange(false); });
+  video.addEventListener('volumechange', () => {
+    if (destroyed) return;
+    const muted = video.muted || video.volume === 0;
+    if (muted === reportedMuted) return;
+    reportedMuted = muted;
+    context.onMutedChange(muted);
+  });
+  video.src = candidate.url;
+  container.appendChild(video);
+  if (context.autoplay) video.play()?.catch(() => {});
+
+  return {
+    observe: () => ({ transport: 'file', elapsedMs: context.elapsedMs(), ready, failure }),
+    setMuted(muted) {
+      reportedMuted = muted;
+      video.muted = muted;
+    },
+    setPaused(paused) {
+      if (paused) video.pause();
+      else video.play()?.catch(() => {});
+    },
+    destroy() {
+      destroyed = true;
+      video.removeAttribute('src');
+      video.load();
+      video.remove();
+    },
+  };
+}
+
 /** HLS: Safari and WKWebView play it natively; elsewhere hls.js loads on first use. */
 function mountHls(container: HTMLElement, candidate: Extract<Candidate, { kind: 'hls' }>, context: TransportContext): Transport {
   const video = document.createElement('video') as HTMLVideoElement & {
@@ -679,6 +738,7 @@ export function openLiveVideo(container: HTMLElement, options: LiveVideoOptions)
       } : undefined,
     };
     if (candidate.kind === 'hls') mounted = mountHls(container, candidate, context);
+    else if (candidate.kind === 'file') mounted = mountFile(container, candidate, context);
     else if (isDesktopRuntime()) mounted = mountYouTubeSidecar(container, candidate, context);
     else mounted = mountYouTubeWeb(container, candidate, context);
     transport = mounted;

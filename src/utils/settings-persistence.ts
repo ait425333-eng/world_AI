@@ -127,6 +127,10 @@ function validateSetting(key: string, raw: string, policies: {
         const url = new URL(channel.hlsUrl);
         if (url.username || url.password || !(url.protocol === 'https:' || (url.protocol === 'http:' && url.hostname === '127.0.0.1'))) invalid();
       }
+      if (channel.fileUrl !== undefined) {
+        if (typeof channel.fileUrl !== 'string' || channel.fileUrl.length > 1024) invalid();
+        if (!/^\/videos\/[^/?#]+\.mp4$/i.test(channel.fileUrl) || channel.fileUrl.includes('..')) invalid();
+      }
     }
   }
 }

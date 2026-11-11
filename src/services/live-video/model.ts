@@ -11,9 +11,12 @@ export type VideoId = Brand<string, 'VideoId'>;
 export type ChannelId = Brand<string, 'ChannelId'>;
 /** https manifest whose host is not YouTube or googlevideo (scraped YouTube manifests never play outside the official player). */
 export type HttpsStreamUrl = Brand<string, 'HttpsStreamUrl'>;
+/** Same-origin `/videos/….mp4` path served by the local-videos Vite plugin. */
+export type LocalFileUrl = Brand<string, 'LocalFileUrl'>;
 
 export type Candidate =
   | { readonly kind: 'hls'; readonly url: HttpsStreamUrl }
+  | { readonly kind: 'file'; readonly url: LocalFileUrl }
   | { readonly kind: 'video'; readonly videoId: VideoId }
   | { readonly kind: 'channel'; readonly channelId: ChannelId };
 
@@ -68,9 +71,22 @@ export function parseSourceEntry(entry: string): ParsedEntry {
   if (CHANNEL_ID.test(raw)) return channelOr(raw);
   if (raw.startsWith('@')) return fail('needs-channel-url');
 
+  // Local Manage Channels videos: same-origin `/videos/name.mp4` (dev server plugin).
+  if (/^\/videos\/[^/?#]+\.mp4$/i.test(raw) && !raw.includes('..')) {
+    return ok({ kind: 'file', url: raw as LocalFileUrl });
+  }
+
   const url = toUrl(raw);
   if (!url || (url.protocol !== 'https:' && url.protocol !== 'http:')) return fail('unrecognized');
   const host = url.hostname.toLowerCase();
+
+  if (
+    (host === 'localhost' || host === '127.0.0.1')
+    && /^\/videos\/[^/?#]+\.mp4$/i.test(url.pathname)
+    && !url.pathname.includes('..')
+  ) {
+    return ok({ kind: 'file', url: url.pathname as LocalFileUrl });
+  }
 
   if (url.pathname.toLowerCase().endsWith('.m3u8')) {
     if (isYouTubeOwnedHost(host)) return fail('youtube-manifest');
@@ -127,6 +143,12 @@ export type PlayerObservation =
        */
       readonly progress: 'advancing' | 'stalled' | 'unchecked';
       readonly failure: { readonly kind: 'http'; readonly status: number } | { readonly kind: 'fatal'; readonly detail: string } | null;
+    }
+  | {
+      readonly transport: 'file';
+      readonly elapsedMs: number;
+      readonly ready: boolean;
+      readonly failure: { readonly kind: 'fatal'; readonly detail: string } | null;
     };
 
 export type FailureOutcome =
@@ -206,6 +228,14 @@ export function classifyAttempt(observation: PlayerObservation): AttemptVerdict 
     if (manifest === 'live' && (progress === 'advancing' || progress === 'unchecked')) return { verdict: 'live', video: null };
     if (elapsedMs < LIVE_VIDEO_TIMING.verdictDeadlineMs) return PENDING;
     return manifest === 'live' && progress === 'stalled' ? failed({ kind: 'not-started' }) : failed({ kind: 'timeout' });
+  }
+  if (observation.transport === 'file') {
+    const { failure, ready, elapsedMs } = observation;
+    if (failure) return failed({ kind: 'hls-fatal', detail: failure.detail });
+    // Local mp4s are always VOD; keep them like a custom YouTube recording.
+    if (ready) return { verdict: 'recording', video: null };
+    if (elapsedMs < LIVE_VIDEO_TIMING.verdictDeadlineMs) return PENDING;
+    return failed({ kind: 'timeout' });
   }
   if (observation.api === 'blocked') return { verdict: 'unverifiable', reason: 'player-api-blocked' };
 
@@ -380,7 +410,11 @@ const KEEP: ChainEffect = { type: 'keep' };
 const EMBED_BLOCKED_CODES = new Set([101, 150, 152, 153]);
 
 export function failureKey(slot: string, candidate: Candidate): string {
-  const id = candidate.kind === 'video' ? candidate.videoId : candidate.kind === 'channel' ? candidate.channelId : candidate.url;
+  const id = candidate.kind === 'video'
+    ? candidate.videoId
+    : candidate.kind === 'channel'
+      ? candidate.channelId
+      : candidate.url;
   return `${slot}|${candidate.kind}:${id}`;
 }
 
@@ -468,7 +502,10 @@ export function advanceChain(state: ChainState, event: ChainEvent, parsed: Parse
     case 'live':
       return { state: { ...progress, phase: 'live', index, video: verdict.video }, effect: KEEP };
     case 'recording':
-      if (parsed.source.origin === 'custom' && current.candidate.kind === 'video') {
+      if (
+        parsed.source.origin === 'custom'
+        && (current.candidate.kind === 'video' || current.candidate.kind === 'file')
+      ) {
         return { state: { ...progress, phase: 'recording', index, video: verdict.video }, effect: KEEP };
       }
       return nextOrOffline(progress);
@@ -512,9 +549,10 @@ export function youtubeEmbedSrc(candidate: Extract<Candidate, { kind: 'video' | 
   return `https://www.youtube.com/embed/${candidate.videoId}?${params}`;
 }
 
-/** Link for "Open on YouTube": a video's watch page, a channel's live page, nothing for HLS. */
+/** Link for "Open on YouTube": a video's watch page, a channel's live page, nothing for HLS/file. */
 export function watchUrlFor(candidate: Candidate | null): string | null {
   if (candidate?.kind === 'video') return `https://www.youtube.com/watch?v=${candidate.videoId}`;
   if (candidate?.kind === 'channel') return `https://www.youtube.com/channel/${candidate.channelId}/live`;
+  if (candidate?.kind === 'file') return candidate.url;
   return null;
 }

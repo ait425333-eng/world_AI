@@ -24,6 +24,7 @@ const SHARED_NEWS_STREAMS = new Map([['video:HvZt-nh9sGg', ['france24', 'france2
 function identity(candidate: Candidate): string {
   if (candidate.kind === 'video') return `video:${candidate.videoId}`;
   if (candidate.kind === 'channel') return `channel:${candidate.channelId}`;
+  if (candidate.kind === 'file') return `file:${candidate.url}`;
   return `hls:${candidate.url}`;
 }
 

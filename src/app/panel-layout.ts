@@ -1153,70 +1153,102 @@ export class PanelLayoutManager implements AppModule {
                class="variant-option ${SITE_VARIANT === 'full' ? 'active' : ''}"
                data-variant="full"
                ${vTarget('full')}
-               title="${t('header.world')}${SITE_VARIANT === 'full' ? ` ${t('common.currentVariant')}` : ''}">
+               title="POLITICAL${SITE_VARIANT === 'full' ? ` ${t('common.currentVariant')}` : ''}">
               <span class="variant-icon">🌍</span>
-              <span class="variant-label">${t('header.world')}</span>
+              <span class="variant-label">POLITICAL</span>
             </a>
             <span class="variant-divider"></span>
             <a href="${vHref('tech')}"
                class="variant-option ${SITE_VARIANT === 'tech' ? 'active' : ''}"
                data-variant="tech"
                ${vTarget('tech')}
-               title="${t('header.tech')}${SITE_VARIANT === 'tech' ? ` ${t('common.currentVariant')}` : ''}">
+               title="DIPLOMATIC${SITE_VARIANT === 'tech' ? ` ${t('common.currentVariant')}` : ''}">
               <span class="variant-icon">💻</span>
-              <span class="variant-label">${t('header.tech')}</span>
+              <span class="variant-label">DIPLOMATIC</span>
             </a>
             <span class="variant-divider"></span>
             <a href="${vHref('finance')}"
                class="variant-option ${SITE_VARIANT === 'finance' ? 'active' : ''}"
                data-variant="finance"
                ${vTarget('finance')}
-               title="${t('header.finance')}${SITE_VARIANT === 'finance' ? ` ${t('common.currentVariant')}` : ''}">
+               title="INTERNATIONAL${SITE_VARIANT === 'finance' ? ` ${t('common.currentVariant')}` : ''}">
               <span class="variant-icon">📈</span>
-              <span class="variant-label">${t('header.finance')}</span>
+              <span class="variant-label">INTERNATIONAL</span>
             </a>
             <span class="variant-divider"></span>
             <a href="${vHref('commodity')}"
                class="variant-option ${SITE_VARIANT === 'commodity' ? 'active' : ''}"
                data-variant="commodity"
                ${vTarget('commodity')}
-               title="${t('header.commodity')}${SITE_VARIANT === 'commodity' ? ` ${t('common.currentVariant')}` : ''}">
+               title="CYBER${SITE_VARIANT === 'commodity' ? ` ${t('common.currentVariant')}` : ''}">
               <span class="variant-icon">⛏️</span>
-              <span class="variant-label">${t('header.commodity')}</span>
+              <span class="variant-label">CYBER</span>
             </a>
             <span class="variant-divider"></span>
             <a href="${vHref('energy')}"
                class="variant-option ${SITE_VARIANT === 'energy' ? 'active' : ''}"
                data-variant="energy"
                ${vTarget('energy')}
-               title="${t('header.energy')}${SITE_VARIANT === 'energy' ? ` ${t('common.currentVariant')}` : ''}">
+               title="ECONOMY${SITE_VARIANT === 'energy' ? ` ${t('common.currentVariant')}` : ''}">
               <span class="variant-icon">⚡</span>
-              <span class="variant-label">${t('header.energy')}</span>
+              <span class="variant-label">ECONOMY</span>
             </a>
             <span class="variant-divider"></span>
             <a href="${vHref('happy')}"
                class="variant-option ${SITE_VARIANT === 'happy' ? 'active' : ''}"
                data-variant="happy"
                ${vTarget('happy')}
-               title="Good News${SITE_VARIANT === 'happy' ? ` ${t('common.currentVariant')}` : ''}">
+               title="TECH${SITE_VARIANT === 'happy' ? ` ${t('common.currentVariant')}` : ''}">
               <span class="variant-icon">☀️</span>
-              <span class="variant-label">Good News</span>
+              <span class="variant-label">TECH</span>
             </a>
             <span class="variant-divider"></span>
             <a href="#"
                class="variant-option"
                data-placeholder="true"
-               title="Governance">
+               title="HEALTH">
               <span class="variant-icon">⚖️</span>
-              <span class="variant-label">Governance</span>
+              <span class="variant-label">HEALTH</span>
             </a>
             <span class="variant-divider"></span>
             <a href="#"
                class="variant-option"
                data-placeholder="true"
-               title="Cyber Threats">
+               title="ENVMT/CLIMATE">
               <span class="variant-icon">🛡️</span>
-              <span class="variant-label">Cyber Threats</span>
+              <span class="variant-label">ENVMT/CLIMATE</span>
+            </a>
+            <span class="variant-divider"></span>
+            <a href="#"
+               class="variant-option"
+               data-placeholder="true"
+               title="WEAPONS">
+              <span class="variant-icon">🚢</span>
+              <span class="variant-label">WEAPONS</span>
+            </a>
+            <span class="variant-divider"></span>
+            <a href="#"
+               class="variant-option"
+               data-placeholder="true"
+               title="PUBLIC HEALTH">
+              <span class="variant-icon">🌡️</span>
+              <span class="variant-label">PUBLIC HEALTH</span>
+            </a>
+            <span class="variant-divider"></span>
+            <a href="#"
+               class="variant-option"
+               data-placeholder="true"
+               title="Defense">
+              <span class="variant-icon">🪖</span>
+              <span class="variant-label">Defense</span>
+            </a>
+            <span class="variant-divider"></span>
+            <a href="#"
+               class="variant-option"
+               data-placeholder="true"
+               title="Int">
+              <span class="variant-icon">🌐</span>
+              <span class="variant-label">Int</span>
             </a>`;
       })()}</div>
           <span class="logo">DOMAINS</span><span class="logo-mobile">World Monitor</span><span class="version">v${__APP_VERSION__}</span>${BETA_MODE ? '<span class="beta-badge">BETA</span>' : ''}
@@ -1247,11 +1279,11 @@ export class PanelLayoutManager implements AppModule {
         <div class="header-right">
           <button class="search-btn" id="searchBtn"><kbd>⌘K</kbd> ${t('header.search')}</button>
           ${this.ctx.isDesktopApp ? '' : `<button class="copy-link-btn" id="copyLinkBtn">${t('header.copyLink')}</button>`}
-          ${this.ctx.isDesktopApp ? '' : `<button class="copy-link-btn embed-link-btn" id="embedLinkBtn">${t('header.embed')}</button>`}
           ${this.ctx.isDesktopApp ? '' : `<button class="fullscreen-btn" id="fullscreenBtn" title="${t('header.fullscreen')}" aria-label="${t('header.fullscreen')}">⛶</button>`}
           ${SITE_VARIANT === 'happy' ? `<button class="tv-mode-btn" id="tvModeBtn" title="TV Mode (Shift+T)" aria-label="TV Mode"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></button>` : ''}
           <span id="unifiedSettingsMount"></span>
-          <span id="authWidgetMount" class="auth-widget-mount"></span>
+          <button type="button" class="copy-link-btn header-upload-btn" id="headerUploadBtn">UPLOAD</button>
+          <input type="file" id="headerUploadInput" hidden multiple />
         </div>
       </div>
       <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
@@ -1271,12 +1303,12 @@ export class PanelLayoutManager implements AppModule {
         <div class="mobile-menu-divider"></div>
         ${(() => {
         const variants = [
-          { key: 'full', icon: '🌍', label: t('header.world') },
-          { key: 'tech', icon: '💻', label: t('header.tech') },
-          { key: 'finance', icon: '📈', label: t('header.finance') },
-          { key: 'commodity', icon: '⛏️', label: t('header.commodity') },
-          { key: 'energy', icon: '⚡', label: t('header.energy') },
-          { key: 'happy', icon: '☀️', label: 'Good News' },
+          { key: 'full', icon: '🌍', label: 'POLITICAL' },
+          { key: 'tech', icon: '💻', label: 'DIPLOMATIC' },
+          { key: 'finance', icon: '📈', label: 'INTERNATIONAL' },
+          { key: 'commodity', icon: '⛏️', label: 'CYBER' },
+          { key: 'energy', icon: '⚡', label: 'ECONOMY' },
+          { key: 'happy', icon: '☀️', label: 'TECH' },
         ];
         return variants.map(v =>
           `<button class="mobile-menu-item mobile-menu-variant ${v.key === SITE_VARIANT ? 'active' : ''}" data-variant="${v.key}">
@@ -1344,9 +1376,7 @@ export class PanelLayoutManager implements AppModule {
       <main id="main" tabindex="-1" class="main-content${mapRightClassActive ? ' map-right' : ''}"${mapColWidthStyle}>
         <div class="map-section${mapStartsCollapsed ? ' collapsed' : ''}" id="mapSection">
           <div class="panel-header">
-            <div class="panel-header-left">
-              <span class="panel-title">${escapeHtml(getPanelDisplayName('map'))}</span>
-            </div>
+            <div class="panel-header-left"></div>
             <span class="header-clock" id="headerClock" translate="no"></span>
             <div class="map-header-actions">
               <div class="map-dimension-toggle" id="mapDimensionToggle">
@@ -1391,15 +1421,7 @@ export class PanelLayoutManager implements AppModule {
           <span class="mobile-tab-icon" aria-hidden="true">•••</span><span>More</span>
         </button>
       </nav>
-      <footer class="site-footer">
-        <div class="site-footer-brand">
-          <img src="/favico/android-chrome-96x96.png" alt="" width="28" height="28" loading="lazy" decoding="async" class="site-footer-icon" />
-          <div class="site-footer-brand-text">
-            <span class="site-footer-name">WORLD MONITOR</span>
-            <span class="site-footer-sub">v${__APP_VERSION__}</span>
-          </div>
-        </div>
-      </footer>
+      <footer class="site-footer"></footer>
     `, "legacy direct innerHTML migration"));
     // Mark AFTER the innerHTML swap so the timestamp reflects when the new shell
     // DOM is actually live — placing it before setTrustedHtml recorded a time
@@ -3151,6 +3173,14 @@ export class PanelLayoutManager implements AppModule {
 
     this.lazyDefaultPanel('world-clock', () => import('@/components/WorldClockPanel'), 'WorldClockPanel');
 
+    this.lazyImportedPanel('domain-political', () => import('@/components/DomainFeedPanel'), 'DomainFeedPanel', (DomainFeedPanel) => new DomainFeedPanel('political'));
+    this.lazyImportedPanel('domain-diplomatic', () => import('@/components/DomainFeedPanel'), 'DomainFeedPanel', (DomainFeedPanel) => new DomainFeedPanel('diplomatic'));
+    this.lazyImportedPanel('domain-international', () => import('@/components/DomainFeedPanel'), 'DomainFeedPanel', (DomainFeedPanel) => new DomainFeedPanel('international'));
+    this.lazyImportedPanel('domain-cyber', () => import('@/components/DomainFeedPanel'), 'DomainFeedPanel', (DomainFeedPanel) => new DomainFeedPanel('cyber'));
+    this.lazyImportedPanel('domain-economy', () => import('@/components/DomainFeedPanel'), 'DomainFeedPanel', (DomainFeedPanel) => new DomainFeedPanel('economy'));
+    this.lazyImportedPanel('domain-tech', () => import('@/components/DomainFeedPanel'), 'DomainFeedPanel', (DomainFeedPanel) => new DomainFeedPanel('tech'));
+    this.lazyImportedPanel('domain-health', () => import('@/components/DomainFeedPanel'), 'DomainFeedPanel', (DomainFeedPanel) => new DomainFeedPanel('health'));
+
     this.lazyImportedPanel('airline-intel', () => import('@/components/AirlineIntelPanel'), 'AirlineIntelPanel', (AirlineIntelPanel) => {
       const panel = new AirlineIntelPanel();
       void import('@/components/AviationCommandBar')
@@ -4010,7 +4040,13 @@ export class PanelLayoutManager implements AppModule {
 
   private insertByOrder(grid: HTMLElement, el: HTMLElement, key: string): void {
     const idx = this.resolvedPanelOrder.indexOf(key);
-    if (idx === -1) { grid.appendChild(el); return; }
+    const appendBeforeAddBlock = () => {
+      // Keep real panels ahead of the "+" / Pro / MCP CTAs in DOM order.
+      const addBlock = grid.id === 'panelsGrid' ? grid.querySelector('.add-panel-block') : null;
+      if (addBlock && addBlock.parentNode === grid) grid.insertBefore(el, addBlock);
+      else grid.appendChild(el);
+    };
+    if (idx === -1) { appendBeforeAddBlock(); return; }
     for (let i = idx + 1; i < this.resolvedPanelOrder.length; i++) {
       const nextKey = this.resolvedPanelOrder[i]!;
       const nextEl = grid.querySelector(`[data-panel="${CSS.escape(nextKey)}"]`);
@@ -4024,7 +4060,7 @@ export class PanelLayoutManager implements AppModule {
       // appendChild path so the panel still lands in the grid.
       if (nextEl && nextEl.parentNode === grid) { grid.insertBefore(el, nextEl); return; }
     }
-    grid.appendChild(el);
+    appendBeforeAddBlock();
   }
 
   private wasUltraWide = false;

@@ -3,8 +3,10 @@ import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { VitePWA } from 'vite-plugin-pwa';
 import { appChunkRuntimeCache, createDashboardPrecache } from './shared/pwa-precache';
 import type { OutputBundle } from 'rollup';
-import { resolve, dirname, extname, basename, posix } from 'path';
+import { resolve, dirname, extname, basename, posix, join as pathJoin } from 'path';
+import { createReadStream, existsSync, readdirSync, statSync } from 'fs';
 import { mkdir, readFile, writeFile } from 'fs/promises';
+import type { IncomingMessage, ServerResponse } from 'http';
 import { brotliCompress } from 'zlib';
 import { promisify } from 'util';
 import pkg from './package.json';
@@ -468,6 +470,111 @@ function deferDashboardStylesheetLinks(html: string, bundle: OutputBundle): stri
     const deferredTag = tag.replace(/\s*\/?>$/, ' media="print" data-wm-deferred-style="dashboard">');
     return `${deferredTag}\n    <noscript>${tag}</noscript>`;
   });
+}
+
+/** Local `videos/*.mp4` for Live News Manage Channels (dev/preview only). */
+function localVideosPlugin(): Plugin {
+  const videosDir = resolve(__dirname, 'videos');
+
+  const safeVideoName = (name: string): string | null => {
+    if (!name || name.includes('/') || name.includes('\\') || name.includes('..')) return null;
+    if (!/\.mp4$/i.test(name)) return null;
+    return name;
+  };
+
+  const listVideos = () => {
+    if (!existsSync(videosDir)) return [];
+    return readdirSync(videosDir)
+      .filter((name) => safeVideoName(name))
+      .map((file) => {
+        const url = `/videos/${encodeURIComponent(file).replace(/%2F/gi, '')}`;
+        const label = file
+          .replace(/\.mp4$/i, '')
+          .replace(/\s*\[[A-Za-z0-9_-]{11}\]\s*$/u, '')
+          .replace(/\s*[｜|]\s*/gu, ' - ')
+          .trim();
+        return { file, name: label || file, url };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, 'en'));
+  };
+
+  const sendJson = (res: ServerResponse, status: number, body: unknown) => {
+    res.statusCode = status;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    res.end(JSON.stringify(body));
+  };
+
+  const handle = (req: IncomingMessage, res: ServerResponse, next: () => void) => {
+    const rawUrl = req.url ?? '';
+    const pathOnly = rawUrl.split('?')[0] ?? '';
+
+    if (pathOnly === '/api/local-videos') {
+      try {
+        sendJson(res, 200, { videos: listVideos() });
+      } catch (err) {
+        sendJson(res, 500, { error: err instanceof Error ? err.message : 'list failed' });
+      }
+      return;
+    }
+
+    if (!pathOnly.startsWith('/videos/')) return next();
+    const encoded = pathOnly.slice('/videos/'.length);
+    let fileName: string;
+    try {
+      fileName = decodeURIComponent(encoded);
+    } catch {
+      res.statusCode = 400;
+      res.end('Bad path');
+      return;
+    }
+    if (!safeVideoName(fileName)) {
+      res.statusCode = 404;
+      res.end('Not found');
+      return;
+    }
+    const fullPath = pathJoin(videosDir, fileName);
+    if (!existsSync(fullPath) || !statSync(fullPath).isFile()) {
+      res.statusCode = 404;
+      res.end('Not found');
+      return;
+    }
+    const { size } = statSync(fullPath);
+    const range = req.headers.range;
+    if (range) {
+      const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+      if (match) {
+        const start = match[1] ? Number(match[1]) : 0;
+        const end = match[2] ? Number(match[2]) : size - 1;
+        if (Number.isFinite(start) && Number.isFinite(end) && start <= end && end < size) {
+          res.statusCode = 206;
+          res.setHeader('Content-Type', 'video/mp4');
+          res.setHeader('Accept-Ranges', 'bytes');
+          res.setHeader('Content-Range', `bytes ${start}-${end}/${size}`);
+          res.setHeader('Content-Length', String(end - start + 1));
+          res.setHeader('Cache-Control', 'public, max-age=3600');
+          createReadStream(fullPath, { start, end }).pipe(res);
+          return;
+        }
+      }
+    }
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Content-Length', String(size));
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    createReadStream(fullPath).pipe(res);
+  };
+
+  return {
+    name: 'local-videos-dev',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => handle(req, res, next));
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use((req, res, next) => handle(req, res, next));
+    },
+  };
 }
 
 function polymarketPlugin(): Plugin {
@@ -1062,6 +1169,7 @@ export default defineConfig(({ mode }) => {
       !isDesktopBuild && activeVariant === 'full' && variantDashboardHtmlPlugin(),
       webMcpDevSecurityHeadersPlugin(),
       polymarketPlugin(),
+      localVideosPlugin(),
       rssProxyPlugin(),
       miitNewsPlugin(),
       gpsjamDevPlugin(),

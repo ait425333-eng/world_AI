@@ -9,6 +9,7 @@ export interface LiveChannel {
   name: string;
   handle?: string; // YouTube handle, shown in channel management; playback never looks it up
   hlsUrl?: string; // user-added https HLS stream
+  fileUrl?: string; // same-origin /videos/….mp4 from the local videos folder
   videoId?: string; // user-added YouTube video
   channelId?: string; // user-added YouTube channel (UC…); plays whatever the channel has live
   geoAvailability?: string[]; // ISO 3166-1 alpha-2 codes; undefined = available everywhere
@@ -176,6 +177,7 @@ function isBuiltinId(id: string): id is LiveNewsSlotId {
 
 /** The one entry a user-added channel plays: its stream, channel, video, or (saved before channel URLs) handle. */
 export function customChannelEntry(channel: LiveChannel): string | null {
+  if (channel.fileUrl) return channel.fileUrl;
   if (channel.hlsUrl) return channel.hlsUrl;
   if (channel.channelId) return `https://www.youtube.com/channel/${channel.channelId}`;
   if (channel.videoId) return `https://www.youtube.com/watch?v=${channel.videoId}`;
@@ -227,6 +229,7 @@ interface StoredCustomChannel {
   name?: string;
   handle?: string;
   hlsUrl?: string;
+  fileUrl?: string;
   videoId?: string;
   channelId?: string;
   /** How older versions saved a user-added video. */
@@ -249,6 +252,9 @@ function customChannelFromStorage(stored: StoredCustomChannel): LiveChannel | nu
   // A handle channel first: older versions also saved the video or YouTube manifest they last scraped for it,
   // which would now play frozen. Its live video cannot be looked up, so playback asks for a channel URL.
   if (stored.handle && stored.handle !== '@video' && !stored.useFallbackOnly) return { id, name, handle: stored.handle };
+  if (stored.fileUrl && /^\/videos\/[^/?#]+\.mp4$/i.test(stored.fileUrl) && !stored.fileUrl.includes('..')) {
+    return { id, name, fileUrl: stored.fileUrl };
+  }
   if (stored.hlsUrl) return { id, name, hlsUrl: stored.hlsUrl };
   const videoId = stored.videoId ?? stored.fallbackVideoId;
   if (videoId) return { id, name, videoId };

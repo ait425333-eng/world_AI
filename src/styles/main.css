@@ -2658,6 +2658,8 @@ body.panel-resize-active iframe {
 
 /* ---- Add Panel (+) block ---- */
 .add-panel-block {
+  /* After real panels: dense auto-flow otherwise packs this short tile into early holes. */
+  order: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3438,6 +3440,19 @@ body.panel-resize-active iframe {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.live-news-manage-local-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.live-news-manage-local-grid .live-news-manage-card-handle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .live-news-manage-add-title {
