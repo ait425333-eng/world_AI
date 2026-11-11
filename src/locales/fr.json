@@ -2584,7 +2584,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "Briefings IA quotidiens par email ou Slack",
+      "headline": "Briefings de menaces quotidiens",
       "tagline": "plus WM Analyst, règles d'alerte et MCP pour Claude",
       "cta": "Passer à Pro →",
       "dismiss": "Rejeter"

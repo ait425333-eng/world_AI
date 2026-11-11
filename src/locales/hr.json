@@ -2660,7 +2660,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "Dnevni AI-briefinzi putem e-maila ili Slacka",
+      "headline": "Dnevni briefovi o prijetnjama",
       "tagline": "plus WM Analyst, pravila upozorenja i MCP za Claude",
       "cta": "Nadogradi na Pro →",
       "dismiss": "Odbaci"

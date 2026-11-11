@@ -2574,7 +2574,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "E-posta veya Slack'te günlük AI raporları",
+      "headline": "Günlük tehdit brifingleri",
       "tagline": "artı WM Analyst, uyarı kuralları ve Claude için MCP",
       "cta": "Pro'ya Yükselt →",
       "dismiss": "Kapat"

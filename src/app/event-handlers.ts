@@ -33,7 +33,6 @@ import type { PositionSample } from '@/services/aviation';
 import type { ClusteredEvent } from '@/types';
 import type { DashboardSnapshot } from '@/services/storage';
 import { PlaybackControl } from '@/components/PlaybackControl';
-import { PizzIntIndicator } from '@/components/PizzIntIndicator';
 import { LlmStatusIndicator } from '@/components/LlmStatusIndicator';
 import type { PredictionPanel } from '@/components/PredictionPanel';
 import {
@@ -862,6 +861,11 @@ export class EventHandlerManager implements AppModule {
     const isLocalDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
     this.ctx.container.querySelectorAll<HTMLAnchorElement>('.variant-option').forEach(link => {
       link.addEventListener('click', (e) => {
+        // Header-only placeholder tabs (not real SITE_VARIANT hosts).
+        if (link.dataset.placeholder === 'true') {
+          e.preventDefault();
+          return;
+        }
         const variant = link.dataset.variant;
         if (!variant || variant === SITE_VARIANT) return;
         e.preventDefault();
@@ -2090,8 +2094,23 @@ export class EventHandlerManager implements AppModule {
   startHeaderClock(): void {
     const el = document.getElementById('headerClock');
     if (!el) return;
+    const pakistanClock = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Karachi',
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
     const tick = () => {
-      el.textContent = new Date().toUTCString().replace('GMT', 'UTC');
+      const parts = Object.fromEntries(
+        pakistanClock.formatToParts(new Date()).map((part) => [part.type, part.value]),
+      );
+      // Same shape as the old UTC strip: "Wed, 11 Nov 2026 10:32:00 PKT"
+      el.textContent = `${parts.weekday}, ${parts.day} ${parts.month} ${parts.year} ${parts.hour}:${parts.minute}:${parts.second} PKT`;
     };
     tick();
     this.clockIntervalId = setInterval(tick, 1000);
@@ -2109,13 +2128,7 @@ export class EventHandlerManager implements AppModule {
   }
 
   setupPizzIntIndicator(): void {
-    if (SITE_VARIANT !== 'full') return;
-
-    this.ctx.pizzintIndicator = new PizzIntIndicator();
-    const headerLeft = this.ctx.container.querySelector('.header-left');
-    if (headerLeft) {
-      headerLeft.appendChild(this.ctx.pizzintIndicator.getElement());
-    }
+    // Header pizza index control intentionally disabled.
   }
 
   setupLlmStatusIndicator(): void {

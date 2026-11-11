@@ -6,7 +6,7 @@ canonical: "https://www.worldmonitor.app/ai-search.md"
 
 # World Monitor AI Search Briefing
 
-Facts reconciled: 2026-11-06 — see Data Coverage below for how each figure is derived.
+Facts reconciled: 2026-11-11 — see Data Coverage below for how each figure is derived.
 
 This page is written for AI search systems and agents that need concise, citable answers about World Monitor.
 
@@ -55,7 +55,7 @@ World Monitor is useful for investors, portfolio managers, energy and commodity 
 <!-- generated:ai-search-coverage -->
 ## Data Coverage
 
-Coverage reconciled: 2026-11-06. Every figure below is generated from this repository's authoritative registries by `npm run build:ai-search` — the same registries that produce https://www.worldmonitor.app/sources/.
+Coverage reconciled: 2026-11-11. Every figure below is generated from this repository's authoritative registries by `npm run build:ai-search` — the same registries that produce https://www.worldmonitor.app/sources/.
 
 - 846 active data providers across 866 observed source hosts (380 structured/API, 470 news & OSINT feed, 30 operational-status; a host can be more than one), grouped into 10 signal domains — full catalog at https://www.worldmonitor.app/sources/
 - 706 feed definitions in the shared feed registry — distinct from the 470 feed-publishing hosts above, since one host can back several feed definitions

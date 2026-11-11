@@ -1415,7 +1415,7 @@
   "components.proBanner.badge": "PRO",
   "components.proBanner.cta": "Upgrade to Pro →",
   "components.proBanner.dismiss": "Dismiss",
-  "components.proBanner.headline": "Daily AI briefs by email or Slack",
+  "components.proBanner.headline": "Daily Threat Briefs",
   "components.proBanner.tagline": "plus WM Analyst, alert rules and MCP for Claude",
   "components.progressCharts.fallbackBadge": "Showing static fallback data — live series unavailable",
   "components.progressCharts.fallbackTooltip": "The live World Bank seed could not be reached. These charts are rendered from a hardcoded snapshot last verified Feb 2026.",

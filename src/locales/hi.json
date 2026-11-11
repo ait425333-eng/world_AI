@@ -2643,7 +2643,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "ईमेल या Slack के माध्यम से दैनिक AI रिपोर्ट",
+      "headline": "दैनिक थ्रेट ब्रीफ्स",
       "tagline": "साथ ही WM Analyst, alert नियम और Claude के लिए MCP",
       "cta": "प्रो में अपग्रेड करें →",
       "dismiss": "बंद करें"

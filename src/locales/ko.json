@@ -2564,7 +2564,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "매일 이메일 또는 Slack으로 받는 AI 브리핑",
+      "headline": "일일 위협 브리핑",
       "tagline": "WM Analyst, 알림 규칙, Claude용 MCP 포함",
       "cta": "Pro로 업그레이드 →",
       "dismiss": "닫기"

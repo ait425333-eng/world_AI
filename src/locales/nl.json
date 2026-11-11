@@ -2190,7 +2190,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "Dagelijkse AI-briefings per e-mail of Slack",
+      "headline": "Dagelijkse dreigingsbriefings",
       "tagline": "plus WM Analyst, waarschuwingsregels en MCP voor Claude",
       "cta": "Upgrade naar Pro →",
       "dismiss": "Verwijderen"

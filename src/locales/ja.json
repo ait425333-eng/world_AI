@@ -2564,7 +2564,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "毎日のAIブリーフをメールまたはSlackで受け取る",
+      "headline": "デイリー脅威ブリーフ",
       "tagline": "WM Analyst、アラートルール、Claude向けMCP付き",
       "cta": "Pro にアップグレード →",
       "dismiss": "閉じる"

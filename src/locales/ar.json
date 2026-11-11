@@ -2614,7 +2614,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "ملخصات AI يومية بالبريد أو Slack",
+      "headline": "موجزات التهديدات اليومية",
       "tagline": "بالإضافة إلى WM Analyst وقواعد التنبيهات و MCP لـ Claude",
       "cta": "ترقية إلى Pro →",
       "dismiss": "رفض"

@@ -2584,7 +2584,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "Rapoarte zilnice AI prin email sau Slack",
+      "headline": "Briefinguri zilnice de amenințări",
       "tagline": "plus WM Analyst, reguli de alertă și MCP pentru Claude",
       "cta": "Upgrade la Pro →",
       "dismiss": "Închide"

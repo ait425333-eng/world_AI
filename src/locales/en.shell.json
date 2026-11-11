@@ -505,7 +505,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "Daily AI briefs by email or Slack",
+      "headline": "Daily Threat Briefs",
       "tagline": "plus WM Analyst, alert rules and MCP for Claude",
       "cta": "Upgrade to Pro →",
       "dismiss": "Dismiss"

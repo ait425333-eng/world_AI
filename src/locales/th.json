@@ -2564,7 +2564,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "สรุปข้อมูล AI ประจำวันทางอีเมลหรือ Slack",
+      "headline": "สรุปภัยคุกคามประจำวัน",
       "tagline": "รวมถึง WM Analyst, กฎการแจ้งเตือน และ MCP สำหรับ Claude",
       "cta": "อัปเกรดเป็น Pro →",
       "dismiss": "ปิด"

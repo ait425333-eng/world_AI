@@ -1,13 +1,11 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 
-// Conversion audit item 10 (2026-11-06): on phones the free-user Pro strip
-// read "Pro is launched — More Signal, Less Nois…", which names nothing a
-// visitor gets. The strip now leads with one concrete Pro feature, and on
-// narrow screens that line must be readable in full inside the 40px slot the
-// pre-paint script reserves (a taller strip would shift the dashboard).
+// Free-user strip shows a single "Daily Threat Briefs" label. On phones that
+// label must stay readable in full inside the 40px slot the pre-paint script
+// reserves (a taller strip would shift the dashboard).
 
-const HEADLINE = 'Daily AI briefs by email or Slack';
+const HEADLINE = 'Daily Threat Briefs';
 const SLOT_HEIGHT = 40;
 
 async function openFreeDashboard(page: Page, path = '/'): Promise<void> {
@@ -23,17 +21,13 @@ async function openFreeDashboard(page: Page, path = '/'): Promise<void> {
 
 async function bannerLayout(page: Page) {
   return page.locator('.pro-banner').evaluate((banner) => {
-    const text = banner.querySelector<HTMLElement>('.pro-banner-text')!;
-    const headline = text.querySelector<HTMLElement>('strong')!;
-    const tagline = banner.querySelector<HTMLElement>('.pro-banner-tagline');
-    const cta = banner.querySelector<HTMLElement>('.pro-banner-cta')!.getBoundingClientRect();
-    const visible = (el: HTMLElement | null) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+    const label = banner.querySelector<HTMLElement>('.pro-banner-threat')!;
+    const rect = label.getBoundingClientRect();
     return {
-      headline: headline.textContent?.trim(),
-      headlineClipped: text.scrollWidth > text.clientWidth + 1 || text.scrollHeight > text.clientHeight + 1,
-      taglineVisible: visible(tagline),
+      headline: label.textContent?.trim(),
+      headlineClipped: label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1,
       height: banner.getBoundingClientRect().height,
-      ctaRight: cta.right,
+      labelRight: rect.right,
       viewport: window.innerWidth,
     };
   });
@@ -43,19 +37,18 @@ for (const width of [360, 390]) {
   test.describe(`Pro strip at ${width}px`, () => {
     test.use({ viewport: { width, height: 800 }, isMobile: true, hasTouch: true });
 
-    test('names a concrete Pro feature in full, inside the reserved slot', async ({ page }) => {
+    test('names Daily Threat Briefs in full, inside the reserved slot', async ({ page }) => {
       await openFreeDashboard(page);
       const layout = await bannerLayout(page);
       expect(layout.headline).toBe(HEADLINE);
       expect(layout.headlineClipped, 'headline must not be cut off').toBe(false);
-      expect(layout.taglineVisible, 'the tagline is desktop-only').toBe(false);
       expect(layout.height).toBeLessThanOrEqual(SLOT_HEIGHT);
-      expect(layout.ctaRight).toBeLessThanOrEqual(layout.viewport);
+      expect(layout.labelRight).toBeLessThanOrEqual(layout.viewport);
     });
   });
 }
 
-// Every language must fit too: the headline is the whole message on a phone.
+// Every language must fit too: the threat label is the whole message.
 const LOCALE_DIR = new URL('../src/locales/', import.meta.url);
 const localeHeadlines = readdirSync(LOCALE_DIR)
   .filter((file) => file.endsWith('.json') && !file.endsWith('.shell.json'))
@@ -70,11 +63,11 @@ test.describe('Pro strip at 360px in every language', () => {
   for (const { lang, headline } of localeHeadlines) {
     test(`${lang} headline fits in full`, async ({ page }) => {
       await openFreeDashboard(page, `/?lang=${lang}`);
-      await expect(page.locator('.pro-banner-text strong')).toHaveText(headline);
+      await expect(page.locator('.pro-banner-threat')).toHaveText(headline);
       const layout = await bannerLayout(page);
       expect(layout.headlineClipped, `${lang}: "${headline}" is cut off`).toBe(false);
       expect(layout.height).toBeLessThanOrEqual(SLOT_HEIGHT);
-      expect(layout.ctaRight).toBeLessThanOrEqual(layout.viewport);
+      expect(layout.labelRight).toBeLessThanOrEqual(layout.viewport);
     });
   }
 });
@@ -82,11 +75,10 @@ test.describe('Pro strip at 360px in every language', () => {
 test.describe('Pro strip on desktop', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('shows the headline and the tagline on one line', async ({ page }) => {
+  test('shows the Daily Threat Briefs label', async ({ page }) => {
     await openFreeDashboard(page);
     const layout = await bannerLayout(page);
     expect(layout.headline).toBe(HEADLINE);
-    expect(layout.taglineVisible).toBe(true);
     expect(layout.headlineClipped).toBe(false);
     expect(layout.height).toBeLessThanOrEqual(SLOT_HEIGHT);
   });
@@ -99,7 +91,7 @@ test.describe('Pro strip on desktop', () => {
     await page.route(/abacus\.worldmonitor\.app/, (route) => route.abort());
     await openFreeDashboard(page);
     const started = Date.now();
-    await page.locator('.pro-banner-cta').click();
+    await page.locator('.pro-banner-threat').click();
     await page.waitForURL(/\/pro#pricing$/, { timeout: 3000 });
     expect(Date.now() - started).toBeLessThan(3000);
     const pending = await page.evaluate(() => sessionStorage.getItem('wm-conversion-pending'));
@@ -114,7 +106,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
   test.describe(`Pro strip in the ${colorScheme} theme`, () => {
     test.use({ viewport: { width: 390, height: 800 }, isMobile: true, hasTouch: true, colorScheme });
 
-    test('the headline has readable contrast', async ({ page }) => {
+    test('the threat label has readable contrast', async ({ page }) => {
       await openFreeDashboard(page);
       const { background, ratio } = await page.locator('.pro-banner').evaluate((banner) => {
         const rgb = (value: string) => (value.match(/[\d.]+/g) ?? []).map(Number);
@@ -122,8 +114,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
           const channel = (c: number) => { const s = c / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; };
           return 0.2126 * channel(r!) + 0.7152 * channel(g!) + 0.0722 * channel(b!);
         };
+        const label = banner.querySelector('.pro-banner-threat')!;
         const bg = rgb(getComputedStyle(banner).backgroundColor);
-        const fg = rgb(getComputedStyle(banner.querySelector('strong')!).color);
+        const fg = rgb(getComputedStyle(label).color);
         const [hi, lo] = [luminance(bg), luminance(fg)].sort((a, b) => b - a);
         return { background: bg, ratio: (hi! + 0.05) / (lo! + 0.05) };
       });

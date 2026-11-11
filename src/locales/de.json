@@ -2574,7 +2574,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "Tägliche AI-Briefings per E-Mail oder Slack",
+      "headline": "Tägliche Bedrohungsberichte",
       "tagline": "plus WM Analyst, Alert-Regeln und MCP für Claude",
       "cta": "Upgrade auf Pro →",
       "dismiss": "Ausblenden"

@@ -2594,7 +2594,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "Codzienne raporty AI e-mailem lub na Slacku",
+      "headline": "Codzienne raporty o zagrożeniach",
       "tagline": "plus WM Analyst, reguły alertów i MCP dla Claude",
       "cta": "Przejdź na Pro →",
       "dismiss": "Odrzuć"

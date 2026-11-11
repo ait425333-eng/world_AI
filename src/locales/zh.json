@@ -2564,7 +2564,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "每日AI情报摘要，通过邮件或Slack接收",
+      "headline": "每日威胁简报",
       "tagline": "另含WM Analyst、告警规则和适用于Claude的MCP",
       "cta": "升级到Pro →",
       "dismiss": "关闭"

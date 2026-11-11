@@ -2646,7 +2646,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "خلاصه‌های روزانه هوش مصنوعی از طریق ایمیل یا Slack",
+      "headline": "خلاصه تهدیدات روزانه",
       "tagline": "به‌علاوه WM Analyst، قوانین هشدار و MCP برای Claude",
       "cta": "ارتقا به Pro ←",
       "dismiss": "نادیده گرفتن"

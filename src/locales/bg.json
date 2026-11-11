@@ -2574,7 +2574,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "Ежедневни AI справки по имейл или Slack",
+      "headline": "Ежедневни доклади за заплахи",
       "tagline": "плюс WM Analyst, правила за известяване и MCP за Claude",
       "cta": "Надстройка към Pro →",
       "dismiss": "Отхвърляне"

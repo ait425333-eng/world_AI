@@ -2666,7 +2666,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "Щоденні AI-брифінги на email або в Slack",
+      "headline": "Щоденні брифінги про загрози",
       "tagline": "плюс WM Analyst, правила сповіщень та MCP для Claude",
       "cta": "Перейти на Pro →",
       "dismiss": "Закрити"

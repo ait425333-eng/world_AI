@@ -2643,7 +2643,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "Napi AI-összefoglalók e-mailben vagy Slacken",
+      "headline": "Napi fenyegetés-összefoglalók",
       "tagline": "plusz WM Analyst, riasztási szabályok és MCP a Claudehez",
       "cta": "Frissítés Pro-ra →",
       "dismiss": "Eltüntetés"
