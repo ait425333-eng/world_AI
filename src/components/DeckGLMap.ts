@@ -6208,7 +6208,7 @@ export class DeckGLMap {
 
     const authorBadge = document.createElement('div');
     authorBadge.className = 'map-author-badge';
-    authorBadge.textContent = '© Elie Habib · Someone™';
+    authorBadge.textContent = 'LAYERS';
     toggles.appendChild(authorBadge);
 
     this.container.appendChild(toggles);

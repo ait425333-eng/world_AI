@@ -241,17 +241,9 @@ export class PanelTabBar {
       this.tablistEl.appendChild(this.renderTab(tab, tab.id === activeTabId, tabs.length > 1));
     }
     this.updateControlledPanel(activeTabId);
-    const addBtn = document.createElement('button');
-    addBtn.className = 'dashboard-tab-add';
-    addBtn.title = t('dashboardTabs.addTabTitle');
-    addBtn.textContent = '+';
-    // The click always reaches the manager: `addTab` is the single enforcement
-    // point for the cap, so the button never decides on its own.
-    addBtn.addEventListener('click', () => this.callbacks.onAdd());
-    this.addBtn = addBtn;
-    this.applyAddLock();
-    // The tablist owns only tabs; the add button is a sibling in the bar.
-    this.element.replaceChildren(this.tablistEl, addBtn, this.liveRegion);
+    // New-tab "+" control intentionally hidden from the dashboard chrome.
+    this.addBtn = null;
+    this.element.replaceChildren(this.tablistEl, this.liveRegion);
   }
 
   private renderTab(tab: PanelTab, isActive: boolean, canDelete: boolean): HTMLElement {

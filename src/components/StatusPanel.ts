@@ -186,8 +186,7 @@ export class StatusPanel extends Panel {
    * document; the row then stays detached rather than throwing.
    */
   private ensureCoverageRowMounted(): void {
-    if (this.element.isConnected) return;
-    document.querySelector('.site-footer')?.appendChild(this.element);
+    // Footer chrome no longer shows the digest coverage strip.
   }
 
   public getDigestCoverage(): DigestCoverageSummary | null {
