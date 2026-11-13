@@ -63,7 +63,8 @@ describe('variant panel config resolution', () => {
     const forecast = getEffectivePanelConfig('forecast', 'happy');
 
     assert.equal(forecast.name, 'AI Forecasts');
-    assert.equal(forecast.enabled, true);
+    // happy has no native forecast entry, so it inherits FULL_PANELS (curated opt-in).
+    assert.equal(forecast.enabled, false);
   });
 
   it('applies variant overrides on top of the variant-specific base config', () => {
@@ -75,23 +76,31 @@ describe('variant panel config resolution', () => {
   });
 
   it('keeps the global map available when free-tier defaults are clamped', () => {
-    const fullDefaults = Object.fromEntries(
-      VARIANT_DEFAULTS.full.map((key) => [key, { ...getEffectivePanelConfig(key, 'full') }]),
+    // Curated full defaults are intentionally under the free cap, so synthesize
+    // an over-cap layout to exercise clamping behavior.
+    const overCapDefaults = Object.fromEntries(
+      VARIANT_DEFAULTS.full.map((key, index) => {
+        const base = { ...getEffectivePanelConfig(key, 'full') };
+        return [key, { ...base, enabled: index < FREE_MAX_PANELS + 5 }];
+      }),
     );
 
-    const clamped = enforceFreePanelLimit(fullDefaults, false);
+    const clamped = enforceFreePanelLimit(overCapDefaults, false);
 
     assert.equal(clamped.map?.enabled, true);
     assert.equal(countFreePanelCapUsage(clamped), FREE_MAX_PANELS);
   });
 
   it('restores stale over-cap free layouts where the cap disabled the map', () => {
-    const fullDefaults = Object.fromEntries(
-      VARIANT_DEFAULTS.full.map((key) => [key, { ...getEffectivePanelConfig(key, 'full') }]),
+    const overCapDefaults = Object.fromEntries(
+      VARIANT_DEFAULTS.full.map((key, index) => {
+        const base = { ...getEffectivePanelConfig(key, 'full') };
+        return [key, { ...base, enabled: index < FREE_MAX_PANELS + 5 }];
+      }),
     );
-    const stale = enforceFreePanelLimit(fullDefaults, false);
+    const stale = enforceFreePanelLimit(overCapDefaults, false);
     stale.map = { ...stale.map!, enabled: false };
-    const disabledCapPanel = Object.entries(fullDefaults).find(([key, panel]) =>
+    const disabledCapPanel = Object.entries(overCapDefaults).find(([key, panel]) =>
       isFreePanelCapCounted(key) && panel.enabled && !stale[key]?.enabled
     );
     assert.ok(disabledCapPanel, 'fixture should include a disabled over-cap panel');
@@ -105,10 +114,13 @@ describe('variant panel config resolution', () => {
   });
 
   it('does not force-enable a manually hidden map when the free layout is exactly at cap', () => {
-    const fullDefaults = Object.fromEntries(
-      VARIANT_DEFAULTS.full.map((key) => [key, { ...getEffectivePanelConfig(key, 'full') }]),
+    const overCapDefaults = Object.fromEntries(
+      VARIANT_DEFAULTS.full.map((key, index) => {
+        const base = { ...getEffectivePanelConfig(key, 'full') };
+        return [key, { ...base, enabled: index < FREE_MAX_PANELS + 5 }];
+      }),
     );
-    const atCap = enforceFreePanelLimit(fullDefaults, false);
+    const atCap = enforceFreePanelLimit(overCapDefaults, false);
     atCap.map = { ...atCap.map!, enabled: false };
 
     const restored = restoreFreeMapPanelAccess(atCap);

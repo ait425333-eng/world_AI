@@ -13,6 +13,7 @@ import {
   isFreePanelCapCounted,
   isPanelInVariantDefaults,
 } from '@/config/panels';
+import { panelMatchesSearchQuery } from '@/services/panel-search';
 import { isProUser } from '@/services/widget-store';
 import { SITE_VARIANT } from '@/config/variant';
 import { t } from '@/services/i18n';
@@ -1525,11 +1526,13 @@ export class UnifiedSettings {
     }
 
     if (this.panelFilter) {
-      const lower = this.panelFilter.toLowerCase();
       entries = entries.filter(([key, panel]) =>
-        key.toLowerCase().includes(lower) ||
-        panel.name.toLowerCase().includes(lower) ||
-        this.config.getLocalizedPanelName(key, panel.name).toLowerCase().includes(lower)
+        panelMatchesSearchQuery(
+          key,
+          panel.name,
+          this.config.getLocalizedPanelName(key, panel.name),
+          this.panelFilter,
+        )
       );
     }
 

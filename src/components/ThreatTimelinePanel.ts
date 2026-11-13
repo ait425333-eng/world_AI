@@ -8,16 +8,18 @@ import {
   THREAT_LEVEL_COLORS,
   THREAT_LEVEL_LABELS,
   buildThreatTimelineState,
-  countHighSeverityDays,
-  describeThreatTimelineTrend,
   normalizeClusterStories,
   normalizeServerInsightStories,
+  scenarioDomainFromCategory,
+  summarizeProbableScenariosRisk,
+  threatIndicatorsForDomain,
   type ThreatTimelineDay,
   type ThreatTimelineGroup,
   type ThreatTimelineItem,
   type ThreatTimelineState,
   type TimelineThreatLevel,
 } from './threat-timeline-utils';
+import { setProbableScenariosRiskSummary } from '@/services/probable-scenarios-risk';
 
 const STACK_LEVELS = [...THREAT_LEVELS].reverse() as TimelineThreatLevel[];
 
@@ -37,9 +39,9 @@ export class ThreatTimelinePanel extends Panel {
   constructor() {
     super({
       id: 'threat-timeline',
-      title: 'Threat Timeline',
+      title: 'Probable Scenarios',
       showCount: false,
-      infoTooltip: 'Seven-day threat-level distribution from intelligence insights.',
+      infoTooltip: '<strong>Methodology</strong> Scenario likelihood <code>P(S)=Σ(wᵢ·xᵢ)/Σ(wᵢ)×100</code> from military, diplomatic, political, economic, and intelligence indicators.<ul><li><strong>Highly Unlikely</strong>: 0–24</li><li><strong>Unlikely</strong>: 25–49</li><li><strong>Possible</strong>: 50–64</li><li><strong>Likely</strong>: 65–79</li><li><strong>Highly Likely</strong>: 80–100</li></ul>Weighted likelihood score, not a calibrated statistical probability.',
       defaultRowSpan: 2,
     });
 
@@ -88,37 +90,32 @@ export class ThreatTimelinePanel extends Panel {
     this.setCount(state.items.length);
     if (!state.hasData) {
       const message = state.status === 'degraded'
-        ? 'No recent threat metadata available from the intelligence snapshot.'
-        : 'No recent threat metadata in the last 7 days.';
+        ? 'No recent probability metadata available from the intelligence snapshot.'
+        : 'No recent probability metadata in the last 7 days.';
       this.renderEmpty(message, state.degradedReasons);
       return;
     }
 
-    const highSeverityCount = state.totals.critical + state.totals.high;
-    const highSeverityDays = countHighSeverityDays(state);
-    const trend = describeThreatTimelineTrend(state.days);
+    setProbableScenariosRiskSummary(summarizeProbableScenariosRisk(state));
+
     const total = state.items.length;
     const chart = this.renderChart(state.days);
     const groups = this.renderGroups(state.groups);
+    const levelStats = THREAT_LEVELS.map((level) => `
+          <div class="threat-timeline-stat threat-timeline-stat--level" title="${escapeHtml(THREAT_LEVEL_LABELS[level])}">
+            <span class="threat-timeline-stat-swatch" style="background:${THREAT_LEVEL_COLORS[level]}"></span>
+            <span class="threat-timeline-stat-value">${state.totals[level]}</span>
+            <span class="threat-timeline-stat-label">${escapeHtml(THREAT_LEVEL_LABELS[level])}</span>
+          </div>`).join('');
     const degradation = state.degradedReasons.length > 0
       ? `<div class="threat-timeline-note">${escapeHtml(state.degradedReasons.join(' | '))}</div>`
       : '';
 
-    this.setDataBadge(state.status === 'ok' ? 'live' : 'cached', state.status === 'ok' ? sourceLabel : 'degraded');
+    this.clearDataBadge();
     this.setSafeContent(unsafeRawHtml(`
       <div class="threat-timeline-panel">
         <div class="threat-timeline-summary">
-          <div class="threat-timeline-stat">
-            <span class="threat-timeline-stat-value">${highSeverityCount}</span>
-            <span class="threat-timeline-stat-label">Critical/high</span>
-          </div>
-          <div class="threat-timeline-stat">
-            <span class="threat-timeline-stat-value">${highSeverityDays}</span>
-            <span class="threat-timeline-stat-label">Active days</span>
-          </div>
-          <div class="threat-timeline-trend ${trend.className}">
-            <span class="threat-timeline-trend-label">${escapeHtml(trend.label)}</span>
-            <span class="threat-timeline-trend-copy">${escapeHtml(trend.copy)}</span>
+          <div class="threat-timeline-level-stats" aria-label="Counts by probability level">${levelStats}
           </div>
         </div>
         ${chart}
@@ -128,7 +125,7 @@ export class ThreatTimelinePanel extends Panel {
             ${THREAT_LEVEL_LABELS[level]} <strong>${state.totals[level]}</strong>
           </span>
         `).join('')}</div>
-        <div class="threat-timeline-groups" aria-label="Current threat alerts grouped by level">
+        <div class="threat-timeline-groups" aria-label="Current items grouped by probability level">
           ${groups}
         </div>
         <div class="threat-timeline-footer">${total} insight item${total === 1 ? '' : 's'} from ${escapeHtml(sourceLabel)}</div>
@@ -140,7 +137,8 @@ export class ThreatTimelinePanel extends Panel {
 
   private renderEmpty(message: string, reasons: string[] = []): void {
     this.setCount(0);
-    this.setDataBadge('unavailable');
+    this.clearDataBadge();
+    setProbableScenariosRiskSummary(null);
     const reasonHtml = reasons.length > 0
       ? `<div class="threat-timeline-note">${escapeHtml(reasons.join(' | '))}</div>`
       : '';
@@ -148,7 +146,7 @@ export class ThreatTimelinePanel extends Panel {
       <div class="threat-timeline-panel">
         <div class="threat-timeline-empty">
           <div class="threat-timeline-empty-title">${escapeHtml(message)}</div>
-          <div class="threat-timeline-empty-copy">The panel will populate when intelligence insights include timestamped threat levels.</div>
+          <div class="threat-timeline-empty-copy">The panel will populate when intelligence insights include timestamped probability levels.</div>
         </div>
         ${reasonHtml}
       </div>
@@ -212,7 +210,7 @@ export class ThreatTimelinePanel extends Panel {
 
     return `
       <div class="threat-timeline-chart-wrap">
-        <svg class="threat-timeline-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Seven-day threat level distribution">
+        <svg class="threat-timeline-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Seven-day probability level distribution">
           <line x1="${margin.left}" x2="${width - margin.right}" y1="${gridY.toFixed(1)}" y2="${gridY.toFixed(1)}" class="threat-timeline-grid" />
           <line x1="${margin.left}" x2="${width - margin.right}" y1="${(height - margin.bottom).toFixed(1)}" y2="${(height - margin.bottom).toFixed(1)}" class="threat-timeline-axis" />
           ${bars}
@@ -244,15 +242,21 @@ export class ThreatTimelinePanel extends Panel {
     const titleHtml = href
       ? `<a href="${href}" target="_blank" rel="noopener" class="threat-timeline-item-title">${title}</a>`
       : `<span class="threat-timeline-item-title">${title}</span>`;
-    const source = escapeHtml(item.provenance || item.source || 'News Digest');
+    const domain = scenarioDomainFromCategory(item.category);
+    const indicators = threatIndicatorsForDomain(domain);
+    const sourceLabel = item.sourceCount > 1
+      ? `${item.sourceCount} sources`
+      : (item.source || '1 source');
     const age = this.formatAge(item.timestampMs);
-    const sourceCount = item.sourceCount > 1 ? `<span class="threat-timeline-source-count">${item.sourceCount} sources</span>` : '';
+    const probabilityLabel = `${item.probability.toFixed(1)}%`;
     return `
       <article class="threat-timeline-item">
         ${titleHtml}
         <div class="threat-timeline-item-meta">
-          <span class="threat-timeline-source">${source}</span>
-          ${sourceCount}
+          <span class="threat-timeline-chip threat-timeline-probability" title="Scenario likelihood P(S)">${escapeHtml(probabilityLabel)}</span>
+          <span class="threat-timeline-chip threat-timeline-domain" title="Domain">${escapeHtml(domain)}</span>
+          <span class="threat-timeline-chip threat-timeline-sources" title="Sources">${escapeHtml(sourceLabel)}</span>
+          <span class="threat-timeline-chip threat-timeline-indicators" title="Threat Indicators">${escapeHtml(indicators.join(' · '))}</span>
           <span>${escapeHtml(age)}</span>
         </div>
       </article>
@@ -272,14 +276,15 @@ export class ThreatTimelinePanel extends Panel {
     return `
       <style>
         .threat-timeline-panel { display: grid; gap: 10px; }
-        .threat-timeline-summary { display: grid; grid-template-columns: 76px 76px 1fr; gap: 8px; align-items: stretch; }
-        .threat-timeline-stat, .threat-timeline-trend { border: 1px solid var(--border-color); background: var(--bg-secondary); border-radius: 8px; padding: 8px; min-width: 0; }
-        .threat-timeline-stat-value { display: block; font-size: calc(20px * var(--wm-panel-effective-scale, 1)); line-height: 1; font-weight: 700; color: var(--text-primary); }
-        .threat-timeline-stat-label, .threat-timeline-trend-copy, .threat-timeline-footer, .threat-timeline-note { display: block; font-size: calc(11px * var(--wm-panel-effective-scale, 1)); color: var(--text-secondary); margin-top: 4px; }
-        .threat-timeline-trend { border-left: 3px solid var(--accent); }
-        .threat-timeline-trend.worsening { border-left-color: #ef4444; }
-        .threat-timeline-trend.easing { border-left-color: #38bdf8; }
-        .threat-timeline-trend-label { display: block; color: var(--text-primary); font-size: calc(13px * var(--wm-panel-effective-scale, 1)); font-weight: 700; }
+        .threat-timeline-summary { display: grid; gap: 8px; align-items: stretch; }
+        .threat-timeline-level-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; min-width: 0; }
+        .threat-timeline-stat { border: 1px solid var(--border-color); background: var(--bg-secondary); border-radius: 8px; padding: 8px; min-width: 0; }
+        .threat-timeline-stat--level { display: grid; gap: 4px; padding: 7px; }
+        .threat-timeline-stat-swatch { width: 8px; height: 8px; border-radius: 999px; }
+        .threat-timeline-stat-value { display: block; font-size: calc(18px * var(--wm-panel-effective-scale, 1)); line-height: 1; font-weight: 700; color: var(--text-primary); }
+        .threat-timeline-stat--level .threat-timeline-stat-value { font-size: calc(16px * var(--wm-panel-effective-scale, 1)); }
+        .threat-timeline-stat-label, .threat-timeline-footer, .threat-timeline-note { display: block; font-size: calc(11px * var(--wm-panel-effective-scale, 1)); color: var(--text-secondary); margin-top: 4px; }
+        .threat-timeline-stat--level .threat-timeline-stat-label { margin-top: 0; font-size: calc(9px * var(--wm-panel-effective-scale, 1)); line-height: 1.2; }
         .threat-timeline-chart-wrap { border: 1px solid var(--border-color); border-radius: 8px; background: rgba(15, 23, 42, 0.18); padding: 6px; }
         .threat-timeline-chart { width: 100%; height: 150px; display: block; overflow: visible; }
         .threat-timeline-grid { stroke: var(--border-color); stroke-dasharray: 3 3; opacity: 0.7; }
@@ -298,7 +303,10 @@ export class ThreatTimelinePanel extends Panel {
         .threat-timeline-item-title { color: var(--text-primary); font-size: calc(12px * var(--wm-panel-effective-scale, 1)); line-height: 1.35; text-decoration: none; }
         a.threat-timeline-item-title:hover { color: var(--accent); }
         .threat-timeline-item-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--text-secondary); font-size: calc(10px * var(--wm-panel-effective-scale, 1)); }
-        .threat-timeline-source, .threat-timeline-source-count { border: 1px solid var(--border-color); border-radius: 999px; padding: 1px 6px; color: var(--text-secondary); }
+        .threat-timeline-chip { border: 1px solid var(--border-color); border-radius: 999px; padding: 1px 6px; color: var(--text-secondary); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .threat-timeline-domain { color: var(--text-primary); font-weight: 700; }
+        .threat-timeline-probability { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+        .threat-timeline-indicators { max-width: 220px; }
         .threat-critical .threat-timeline-group-header { border-left: 3px solid #ef4444; }
         .threat-high .threat-timeline-group-header { border-left: 3px solid #f97316; }
         .threat-medium .threat-timeline-group-header { border-left: 3px solid #eab308; }
@@ -307,9 +315,8 @@ export class ThreatTimelinePanel extends Panel {
         .threat-timeline-empty, .threat-timeline-empty-inline { border: 1px dashed var(--border-color); border-radius: 8px; padding: 14px; color: var(--text-secondary); background: var(--bg-secondary); }
         .threat-timeline-empty-title { color: var(--text-primary); font-size: calc(13px * var(--wm-panel-effective-scale, 1)); font-weight: 700; }
         .threat-timeline-empty-copy { margin-top: 5px; font-size: calc(12px * var(--wm-panel-effective-scale, 1)); line-height: 1.4; color: var(--text-secondary); }
-        @media (max-width: 520px) {
-          .threat-timeline-summary { grid-template-columns: 1fr 1fr; }
-          .threat-timeline-trend { grid-column: 1 / -1; }
+        @media (max-width: 420px) {
+          .threat-timeline-level-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
       </style>
     `;

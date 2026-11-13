@@ -72,6 +72,7 @@ export {
   shouldDeferFreeTierEnforcement,
   FREE_MAX_PANELS,
   FREE_MAX_SOURCES,
+  CURATED_FULL_DEFAULT_PANEL_KEYS,
 } from './panels';
 
 // ============================================

@@ -69,14 +69,14 @@ describe('WebMCP search-result effect classes', () => {
   });
 
   it('classifies commands and entities onto the five effect classes', () => {
-    const enabled = new Set(['live-webcams', 'markets']);
+    const enabled = new Set(['live-news', 'markets']);
     const isPanelEnabled = (panelId: string): boolean => enabled.has(panelId);
 
     assert.equal(classifySearchMatchEffect(command('nav:eu'), isPanelEnabled), 'view-state');
     assert.equal(classifySearchMatchEffect(command('time:7d'), isPanelEnabled), 'view-state');
     assert.equal(classifySearchMatchEffect(command('country-map:DE'), isPanelEnabled), 'view-state');
     assert.equal(
-      classifySearchMatchEffect(command('panel:live-webcams'), isPanelEnabled),
+      classifySearchMatchEffect(command('panel:live-news'), isPanelEnabled),
       'view-state',
     );
     assert.equal(

@@ -644,6 +644,23 @@ canvas,
   transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
 }
 
+.mission-preset-card--empty {
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.mission-preset-card--threat .mission-preset-card__icon {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.panel-highlight {
+  outline: 2px solid var(--accent, #2f6fed);
+  outline-offset: 2px;
+}
+
 .mission-preset-card:hover,
 .mission-preset-card.selected {
   border-color: var(--accent);
@@ -1228,6 +1245,158 @@ canvas,
   background: var(--text);
   color: var(--bg);
   border-color: var(--text);
+}
+
+.dummy-chat-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10030;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.dummy-chat-overlay.active {
+  display: flex;
+}
+
+.dummy-chat-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(520px, 100%);
+  max-height: min(720px, 90vh);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.dummy-chat-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dummy-chat-header h2 {
+  margin: 0;
+  font-size: calc(16px * var(--wm-panel-effective-scale, 1));
+  color: var(--text);
+}
+
+.dummy-chat-subtitle {
+  margin: 4px 0 0;
+  font-size: calc(11px * var(--wm-panel-effective-scale, 1));
+  color: var(--text-dim);
+}
+
+.dummy-chat-close {
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.dummy-chat-close:hover {
+  color: var(--text);
+}
+
+.dummy-chat-messages {
+  flex: 1 1 auto;
+  min-height: 220px;
+  overflow-y: auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg);
+}
+
+.dummy-chat-bubble {
+  max-width: 88%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.dummy-chat-bubble--user {
+  align-self: flex-end;
+  background: rgba(30, 136, 229, 0.12);
+  border-color: rgba(30, 136, 229, 0.28);
+}
+
+.dummy-chat-bubble--assistant {
+  align-self: flex-start;
+}
+
+.dummy-chat-bubble-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: calc(10px * var(--wm-panel-effective-scale, 1));
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.dummy-chat-bubble p {
+  margin: 0;
+  font-size: calc(13px * var(--wm-panel-effective-scale, 1));
+  line-height: 1.45;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.dummy-chat-form {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.dummy-chat-input {
+  flex: 1 1 auto;
+  resize: none;
+  min-height: 44px;
+  max-height: 120px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.dummy-chat-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.dummy-chat-send {
+  flex-shrink: 0;
+  padding: 0 14px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--bg);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dummy-chat-send:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .embed-modal-overlay {
@@ -19857,8 +20026,82 @@ button.popup-link {
 }
 
 .pro-banner.pro-banner--threat {
-  background: linear-gradient(90deg, rgba(255, 68, 68, 0.05), rgba(255, 68, 68, 0.1), rgba(255, 68, 68, 0.05)), var(--surface);
-  border-bottom: 1px solid rgba(255, 68, 68, 0.18);
+  background: #ffffff;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 10px 40px 10px 16px;
+}
+
+[data-theme="dark"] .pro-banner.pro-banner--threat {
+  background: var(--surface);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pro-banner-brand {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(460px, 48vw);
+  color: var(--text);
+  text-decoration: none;
+  line-height: 1;
+  z-index: 1;
+}
+
+.pro-banner-brand-mark {
+  display: block;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.pro-banner-brand-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pro-banner-brand-title {
+  font-family: Inter, 'Segoe UI', var(--font-mono), sans-serif;
+  font-weight: 800;
+  font-size: calc(16px * var(--wm-panel-effective-scale, 1));
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #0B1F4B;
+  white-space: nowrap;
+  line-height: 1.1;
+}
+
+.pro-banner-brand-int {
+  color: #1E88E5;
+}
+
+.pro-banner-brand-tagline {
+  font-family: Inter, 'Segoe UI', var(--font-mono), sans-serif;
+  font-weight: 500;
+  font-size: calc(9px * var(--wm-panel-effective-scale, 1));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #455A64;
+  white-space: nowrap;
+  line-height: 1.1;
+}
+
+[data-theme="dark"] .pro-banner-brand-title {
+  color: #E8F1FF;
+}
+
+[data-theme="dark"] .pro-banner-brand-int {
+  color: #4DD0E1;
+}
+
+[data-theme="dark"] .pro-banner-brand-tagline {
+  color: #90A4AE;
 }
 
 .pro-banner.pro-banner-in {
@@ -19959,6 +20202,30 @@ button.popup-link {
     font-size: calc(11px * var(--wm-panel-effective-scale, 1));
     gap: 8px;
     padding: 5px 32px 5px 10px;
+  }
+
+  .pro-banner.pro-banner--threat {
+    padding: 8px 32px 8px 10px;
+    background: #ffffff;
+  }
+
+  .pro-banner-brand {
+    left: 8px;
+    gap: 7px;
+    max-width: min(250px, 52vw);
+  }
+
+  .pro-banner-brand-mark {
+    width: 28px;
+    height: 28px;
+  }
+
+  .pro-banner-brand-title {
+    font-size: calc(12px * var(--wm-panel-effective-scale, 1));
+  }
+
+  .pro-banner-brand-tagline {
+    display: none;
   }
 
   .pro-banner-threat {

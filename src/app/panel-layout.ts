@@ -290,7 +290,6 @@ export const DEFERRED_PANEL_NATURAL_FOOTPRINTS: Readonly<Record<string, Deferred
   'gdelt-intel': { rowSpan: 2 },
   'internet-disruptions': { rowSpan: 2 },
   'live-news': { className: 'panel-wide' },
-  'live-webcams': { className: 'panel-wide' },
   'news-market-correlation': { rowSpan: 2, className: 'panel-wide' },
   'oil-inventories': { rowSpan: 2 },
   'pipeline-status': { rowSpan: 2 },
@@ -1238,9 +1237,9 @@ export class PanelLayoutManager implements AppModule {
             <a href="#"
                class="variant-option"
                data-placeholder="true"
-               title="Defense">
+               title="DEFENSE">
               <span class="variant-icon">🪖</span>
-              <span class="variant-label">Defense</span>
+              <span class="variant-label">DEFENSE</span>
             </a>
             <span class="variant-divider"></span>
             <a href="#"
@@ -1251,14 +1250,10 @@ export class PanelLayoutManager implements AppModule {
               <span class="variant-label">Int</span>
             </a>`;
       })()}</div>
-          <span class="logo">DOMAINS</span><span class="logo-mobile">World Monitor</span><span class="version">v${__APP_VERSION__}</span>${BETA_MODE ? '<span class="beta-badge">BETA</span>' : ''}
+          <span class="logo">DOMAINS</span><span class="logo-mobile">World Monitor</span>${BETA_MODE ? '<span class="beta-badge">BETA</span>' : ''}
           <button class="mobile-settings-btn" id="mobileSettingsBtn" title="${t('header.settings')}" aria-label="${t('header.settings')}">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
-          <div class="status-indicator">
-            <span class="status-dot"></span>
-            <span>${t('header.live')}</span>
-          </div>
           <div class="region-selector">
             <select id="regionSelect" class="region-select" aria-label="${t('header.selectRegion')}">
               <option value="global">${t('components.deckgl.views.global')}</option>
@@ -1326,7 +1321,7 @@ export class PanelLayoutManager implements AppModule {
         </button>
         <button class="mobile-menu-item" id="mobileMenuMission">
           <span class="mobile-menu-item-icon">◎</span>
-          <span class="mobile-menu-item-label">Mission</span>
+          <span class="mobile-menu-item-label">Indicators</span>
           <span class="mobile-menu-chevron">▸</span>
         </button>
         <div class="mobile-menu-divider"></div>
@@ -1350,7 +1345,6 @@ export class PanelLayoutManager implements AppModule {
           <a href="https://www.worldmonitor.app/docs/documentation" target="_blank" rel="noopener">Docs</a>
           <a href="https://status.worldmonitor.app/" target="_blank" rel="noopener">Status</a>
         </div>
-        <div class="mobile-menu-version">v${__APP_VERSION__}</div>
       </nav>
       <div class="region-sheet-backdrop" id="regionSheetBackdrop"></div>
       <div class="region-bottom-sheet" id="regionBottomSheet">
@@ -3221,7 +3215,6 @@ export class PanelLayoutManager implements AppModule {
       return new LiveNewsPanel();
     });
 
-    this.lazyDefaultPanel('live-webcams', () => import('@/components/LiveWebcamsPanel'), 'LiveWebcamsPanel');
     this.lazyDefaultPanel('windy-webcams', () => import('@/components/PinnedWebcamsPanel'), 'PinnedWebcamsPanel');
 
     this.lazyPanel('events', () =>
@@ -3451,13 +3444,6 @@ export class PanelLayoutManager implements AppModule {
         if (liveNewsIdx > 0) {
           allOrder.splice(liveNewsIdx, 1);
           allOrder.unshift('live-news');
-        }
-
-        const webcamsIdx = allOrder.indexOf('live-webcams');
-        if (webcamsIdx !== -1 && webcamsIdx !== allOrder.indexOf('live-news') + 1) {
-          allOrder.splice(webcamsIdx, 1);
-          const afterNews = allOrder.indexOf('live-news') + 1;
-          allOrder.splice(afterNews, 0, 'live-webcams');
         }
       }
 

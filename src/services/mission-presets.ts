@@ -174,7 +174,7 @@ export const MISSION_PRESETS: readonly MissionPreset[] = [
     id: 'osint-newsroom',
     label: 'News Seeker',
     shortLabel: 'News',
-    description: 'Breaking news, source context, webcams, advisories, and social signal.',
+    description: 'Breaking news, source context, advisories, and social signal.',
     icon: 'N',
     view: 'global',
     zoom: 2.1,
@@ -192,7 +192,6 @@ export const MISSION_PRESETS: readonly MissionPreset[] = [
       'asia',
       'us',
       'social-velocity',
-      'live-webcams',
       'security-advisories',
     ],
     layers: [

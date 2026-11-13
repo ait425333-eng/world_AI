@@ -2,6 +2,10 @@ import { getRecentSignals, type CorrelationSignal } from '@/services/correlation
 import { safeStorageGet, safeStorageRemove, safeStorageSet } from '@/utils/safe-storage';
 import type { UnifiedAlert } from '@/services/cross-module-integration';
 import { getAlertSettings, updateAlertSettings } from '@/services/breaking-news-alerts';
+import {
+  getProbableScenariosRiskSummary,
+  PROBABLE_SCENARIOS_UPDATED_EVENT,
+} from '@/services/probable-scenarios-risk';
 import { t } from '@/services/i18n';
 import { getSignalContext } from '@/utils/analysis-constants';
 import { escapeHtml } from '@/utils/sanitize';
@@ -83,7 +87,7 @@ export class IntelligenceFindingsBadge {
 
     this.badge = document.createElement('button');
     this.badge.className = 'intel-findings-badge';
-    this.badge.title = t('components.intelligenceFindings.badgeTitle');
+    this.badge.title = 'Total threat indicators';
     setTrustedHtml(this.badge, trustedHtml('<span class="findings-icon">🎯</span><span class="findings-count">0</span>', "legacy direct innerHTML migration"));
 
     this.dropdown = document.createElement('div');
@@ -207,6 +211,7 @@ export class IntelligenceFindingsBadge {
       safeStorageSet(STORAGE_KEY, 'hidden');
       document.removeEventListener('click', this.boundCloseDropdown);
       document.removeEventListener('wm:intelligence-updated', this.boundUpdate);
+      document.removeEventListener(PROBABLE_SCENARIOS_UPDATED_EVENT, this.boundUpdate);
       if (this.refreshInterval) {
         clearInterval(this.refreshInterval);
         this.refreshInterval = null;
@@ -261,6 +266,7 @@ export class IntelligenceFindingsBadge {
 
   private startRefresh(): void {
     document.addEventListener('wm:intelligence-updated', this.boundUpdate);
+    document.addEventListener(PROBABLE_SCENARIOS_UPDATED_EVENT, this.boundUpdate);
     this.refreshInterval = setInterval(() => {
       if (document.visibilityState === 'visible') this.boundUpdate();
     }, REFRESH_INTERVAL_MS);
@@ -272,7 +278,11 @@ export class IntelligenceFindingsBadge {
     if (this.destroyed || !this.enabled || epoch !== this.updateEpoch) return;
 
     this.findings = findings;
-    const count = this.findings.length;
+    const scenarioSummary = getProbableScenariosRiskSummary();
+    const count = scenarioSummary?.totalItems
+      ?? scenarioSummary?.topThreatIndicators.length
+      ?? 0;
+    const elevatedCount = scenarioSummary?.elevatedCount ?? 0;
 
     const countEl = this.badge.querySelector('.findings-count');
     if (countEl) {
@@ -287,23 +297,19 @@ export class IntelligenceFindingsBadge {
     }
     this.lastFindingCount = count;
 
-    // Update badge status based on priority
-    const hasCritical = this.findings.some(f => f.priority === 'critical');
-    const hasHigh = this.findings.some(f => f.priority === 'high');
-
     this.badge.classList.remove('status-none', 'status-low', 'status-high');
     if (count === 0) {
       this.badge.classList.add('status-none');
-      this.badge.title = t('components.intelligenceFindings.none');
-    } else if (hasCritical || hasHigh) {
+      this.badge.title = 'No threat indicators';
+    } else if (elevatedCount > 0) {
       this.badge.classList.add('status-high');
-      this.badge.title = t('components.intelligenceFindings.reviewRecommended', { count: String(count) });
+      this.badge.title = `${count} threat indicators (${elevatedCount} elevated)`;
     } else if (count <= LOW_COUNT_THRESHOLD) {
       this.badge.classList.add('status-low');
-      this.badge.title = t('components.intelligenceFindings.count', { count: String(count) });
+      this.badge.title = `${count} threat indicators`;
     } else {
       this.badge.classList.add('status-high');
-      this.badge.title = t('components.intelligenceFindings.reviewRecommended', { count: String(count) });
+      this.badge.title = `${count} threat indicators`;
     }
 
     this.renderDropdown();
@@ -631,6 +637,7 @@ export class IntelligenceFindingsBadge {
     this.dismissContextMenu();
     this.dismissFindingsModal();
     document.removeEventListener('wm:intelligence-updated', this.boundUpdate);
+    document.removeEventListener(PROBABLE_SCENARIOS_UPDATED_EVENT, this.boundUpdate);
     document.removeEventListener('click', this.boundCloseDropdown);
     this.badge.remove();
   }

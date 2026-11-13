@@ -17,6 +17,8 @@ import {
 } from '@/services/pro-banner-policy';
 import { t } from '@/services/i18n';
 import { setTrustedHtml, trustedHtml } from '@/utils/dom-utils';
+import stratThreatMarkUrl from '@/assets/strat-threat-int-mark.svg?url';
+
 
 
 let bannerEl: HTMLElement | null = null;
@@ -283,6 +285,13 @@ export function showProBanner(container: HTMLElement): void {
     <button class="pro-banner-close" aria-label="${dismissLabel}">×</button>
   `
     : `
+    <a class="pro-banner-brand" href="/" aria-label="Strat Threat Int">
+      <img class="pro-banner-brand-mark" src="${stratThreatMarkUrl}" alt="" width="22" height="22" decoding="async" />
+      <span class="pro-banner-brand-copy">
+        <span class="pro-banner-brand-title">STRAT THREAT <span class="pro-banner-brand-int">INT</span></span>
+        <span class="pro-banner-brand-tagline">THREAT INTELLIGENCE · EARLY WARNING</span>
+      </span>
+    </a>
     <a class="pro-banner-threat" href="${ctaHref}">${t('components.proBanner.headline')}</a>
     <button class="pro-banner-close" aria-label="${dismissLabel}">×</button>
   `, "legacy direct innerHTML migration"));

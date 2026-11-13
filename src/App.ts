@@ -30,6 +30,7 @@ import {
   FREE_MAX_PANELS,
   FREE_MAX_SOURCES,
   countFreePanelCapUsage,
+  CURATED_FULL_DEFAULT_PANEL_KEYS,
 } from '@/config';
 import {
   sanitizeLayersForVariant,
@@ -1208,6 +1209,25 @@ export class App {
         localStorage.setItem(UNIFIED_MIGRATION_KEY, 'done');
       }
 
+      // One-time migration: keep curated core boards enabled for existing full-variant
+      // sessions (domain feeds + Force Posture were priority-2 and free-tier clamping
+      // could leave them unchecked despite FULL_PANELS defaults).
+      const CURATED_CORE_PANELS_KEY = 'worldmonitor-curated-core-panels-v1';
+      if (SITE_VARIANT === 'full' && !localStorage.getItem(CURATED_CORE_PANELS_KEY)) {
+        let curatedFixed = false;
+        for (const key of CURATED_FULL_DEFAULT_PANEL_KEYS) {
+          const config = panelSettings[key];
+          if (!config) continue;
+          if (!config.enabled || config.proGated) {
+            panelSettings[key] = { ...config, enabled: true };
+            delete panelSettings[key]!.proGated;
+            curatedFixed = true;
+          }
+        }
+        if (curatedFixed) saveToStorage(STORAGE_KEYS.panels, panelSettings);
+        localStorage.setItem(CURATED_CORE_PANELS_KEY, 'done');
+      }
+
       // One-time migration: fix happy variant sessions that got cross-variant panels enabled
       // (regression from #1911 unified panel registry which failed to disable non-variant panels on variant switch)
       const HAPPY_PANEL_FIX_KEY = 'worldmonitor-happy-panel-fix-v1';
@@ -1279,7 +1299,8 @@ export class App {
 
     if (storageAvailable) {
       // One-time migration: prune removed panel keys from stored settings and order
-      const PANEL_PRUNE_KEY = 'worldmonitor-panel-prune-v1';
+      // v2: drop permanently removed Live Webcams (`live-webcams`) from saved layouts
+      const PANEL_PRUNE_KEY = 'worldmonitor-panel-prune-v2';
       if (!localStorage.getItem(PANEL_PRUNE_KEY)) {
         const validKeys = new Set(Object.keys(ALL_PANELS));
         let pruned = false;

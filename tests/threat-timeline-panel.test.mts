@@ -13,7 +13,14 @@ import {
   normalizeClusterStories,
   normalizeServerInsightStories,
   normalizeThreatLevel,
+  summarizeProbableScenariosRisk,
 } from '../src/components/threat-timeline-utils.ts';
+import {
+  calculateAndClassifyScenarioProbability,
+  calculateScenarioProbability,
+  classifyScenarioProbability,
+  evaluateScenarioLikelihood,
+} from '../src/components/scenario-probability.ts';
 import type { ServerInsights } from '../src/services/insights-loader.ts';
 import type { ClusteredEvent } from '../src/types/index.ts';
 
@@ -156,11 +163,13 @@ function fallbackCluster(): ClusteredEvent {
     primarySource: 'Regional RSS',
     primaryLink: 'https://example.com/fallback',
     sourceCount: 2,
+    uniquePublisherCount: 2,
     topSources: [{ name: 'Regional RSS', tier: 2, url: 'https://example.com/source' }],
     allItems: [],
     firstSeen: new Date(runtimeIsoDaysAgo(1)),
     lastUpdated: new Date(runtimeIsoDaysAgo(0)),
     isAlert: true,
+    velocity: { level: 'elevated', sourcesPerHour: 2, trend: 'rising' },
     threat: { level: 'high', category: 'protest', confidence: 0.8, source: 'keyword' },
   };
 }
@@ -174,10 +183,15 @@ async function loadThreatTimelinePanelHarness() {
   const outfile = join(tempDir, 'ThreatTimelinePanel.bundle.mjs');
   const panelPath = resolve(root, 'src/components/ThreatTimelinePanel.ts').replace(/\\/g, '/');
   const insightsLoaderPath = resolve(root, 'src/services/insights-loader.ts').replace(/\\/g, '/');
+  const scenariosRiskPath = resolve(root, 'src/services/probable-scenarios-risk.ts').replace(/\\/g, '/');
 
   const virtualEntrySource = `
     export { ThreatTimelinePanel } from '${panelPath}';
     export { __resetServerInsightsCacheForTests } from '${insightsLoaderPath}';
+    export {
+      __resetProbableScenariosRiskForTests,
+      getProbableScenariosRiskSummary,
+    } from '${scenariosRiskPath}';
   `;
   const stubModules = new Map<string, string>([
     ['i18n-stub', `
@@ -328,6 +342,8 @@ async function loadThreatTimelinePanelHarness() {
     return {
       ThreatTimelinePanel: mod.ThreatTimelinePanel as typeof import('../src/components/ThreatTimelinePanel.ts').ThreatTimelinePanel,
       __resetServerInsightsCacheForTests: mod.__resetServerInsightsCacheForTests as () => void,
+      __resetProbableScenariosRiskForTests: mod.__resetProbableScenariosRiskForTests,
+      getProbableScenariosRiskSummary: mod.getProbableScenariosRiskSummary,
       cleanup() {
         rmSync(tempDir, { recursive: true, force: true });
       },
@@ -347,14 +363,72 @@ describe('ThreatTimelinePanel utilities', () => {
     assert.equal(normalizeThreatLevel(undefined), 'info');
   });
 
+  it('scores the documented P(S) example as Highly Unlikely', () => {
+    const scores = [0.10, 0.20, 0.15, 0.10, 0.20];
+    const weights = [0.30, 0.20, 0.20, 0.15, 0.15];
+    const probability = calculateScenarioProbability(scores, weights);
+    const classified = classifyScenarioProbability(probability);
+
+    assert.equal(probability, 14.5);
+    assert.equal(classified.category, 'info');
+    assert.equal(classified.label, 'Highly Unlikely');
+    assert.deepEqual(
+      calculateAndClassifyScenarioProbability(scores, weights),
+      { probability: 14.5, category: 'info', label: 'Highly Unlikely' },
+    );
+  });
+
+  it('applies the five-level C(P) thresholds including Highly Unlikely', () => {
+    assert.equal(classifyScenarioProbability(0).label, 'Highly Unlikely');
+    assert.equal(classifyScenarioProbability(24.99).label, 'Highly Unlikely');
+    assert.equal(classifyScenarioProbability(25).label, 'Unlikely');
+    assert.equal(classifyScenarioProbability(49.99).label, 'Unlikely');
+    assert.equal(classifyScenarioProbability(50).label, 'Possible');
+    assert.equal(classifyScenarioProbability(64.99).label, 'Possible');
+    assert.equal(classifyScenarioProbability(65).label, 'Likely');
+    assert.equal(classifyScenarioProbability(79.99).label, 'Likely');
+    assert.equal(classifyScenarioProbability(80).label, 'Highly Likely');
+    assert.equal(classifyScenarioProbability(100).label, 'Highly Likely');
+  });
+
   it('buckets server insight stories into a 7-day severity distribution', () => {
     const items = normalizeServerInsightStories({
       generatedAt: new Date(NOW_MS).toISOString(),
       topStories: [
-        serverStory({ threatLevel: 'critical', pubDate: isoDaysAgo(0), primaryTitle: 'Critical item' }),
-        serverStory({ threatLevel: 'high', pubDate: isoDaysAgo(1), primaryTitle: 'High item' }),
-        serverStory({ threatLevel: 'medium', pubDate: isoDaysAgo(2), primaryTitle: 'Medium item' }),
-        serverStory({ threatLevel: 'low', pubDate: isoDaysAgo(6), primaryTitle: 'Low item' }),
+        serverStory({
+          threatLevel: 'critical',
+          category: 'conflict',
+          importanceScore: 95,
+          isAlert: true,
+          uniqueSourceCount: 5,
+          velocity: { level: 'spike', sourcesPerHour: 4 },
+          pubDate: isoDaysAgo(0),
+          primaryTitle: 'Critical item',
+        }),
+        serverStory({
+          threatLevel: 'high',
+          category: 'conflict',
+          importanceScore: 78,
+          uniqueSourceCount: 3,
+          velocity: { level: 'elevated', sourcesPerHour: 2 },
+          pubDate: isoDaysAgo(1),
+          primaryTitle: 'High item',
+        }),
+        serverStory({
+          threatLevel: 'medium',
+          category: 'economic',
+          importanceScore: 55,
+          uniqueSourceCount: 2,
+          pubDate: isoDaysAgo(2),
+          primaryTitle: 'Medium item',
+        }),
+        serverStory({
+          threatLevel: 'low',
+          category: 'general',
+          importanceScore: 30,
+          pubDate: isoDaysAgo(6),
+          primaryTitle: 'Low item',
+        }),
         serverStory({ threatLevel: 'info', pubDate: isoDaysAgo(8), primaryTitle: 'Old item' }),
       ],
     });
@@ -368,15 +442,38 @@ describe('ThreatTimelinePanel utilities', () => {
     assert.equal(state.totals.low, 1);
     assert.equal(state.totals.info, 0, 'items older than 7 days are excluded');
     assert.equal(state.hasData, true);
+    assert.ok(items.every((item) => Number.isFinite(item.probability)));
   });
 
   it('sorts grouped current alerts by threat severity before recency', () => {
     const items = normalizeServerInsightStories({
       generatedAt: new Date(NOW_MS).toISOString(),
       topStories: [
-        serverStory({ threatLevel: 'low', pubDate: isoDaysAgo(0), primaryTitle: 'Fresh low' }),
-        serverStory({ threatLevel: 'critical', pubDate: isoDaysAgo(1), primaryTitle: 'Older critical' }),
-        serverStory({ threatLevel: 'high', pubDate: isoDaysAgo(0), primaryTitle: 'Fresh high' }),
+        serverStory({
+          threatLevel: 'low',
+          importanceScore: 30,
+          pubDate: isoDaysAgo(0),
+          primaryTitle: 'Fresh low',
+        }),
+        serverStory({
+          threatLevel: 'critical',
+          category: 'conflict',
+          importanceScore: 95,
+          isAlert: true,
+          uniqueSourceCount: 5,
+          velocity: { level: 'spike', sourcesPerHour: 4 },
+          pubDate: isoDaysAgo(1),
+          primaryTitle: 'Older critical',
+        }),
+        serverStory({
+          threatLevel: 'high',
+          category: 'conflict',
+          importanceScore: 78,
+          uniqueSourceCount: 3,
+          velocity: { level: 'elevated', sourcesPerHour: 2 },
+          pubDate: isoDaysAgo(0),
+          primaryTitle: 'Fresh high',
+        }),
       ],
     });
 
@@ -385,6 +482,92 @@ describe('ThreatTimelinePanel utilities', () => {
     assert.deepEqual(state.groups.map(group => group.level), ['critical', 'high', 'low']);
     assert.equal(state.items[0]?.title, 'Older critical');
     assert.equal(state.items[1]?.title, 'Fresh high');
+  });
+
+  it('derives Strategic Risk inputs from Probable Scenarios intensity', () => {
+    const items = normalizeServerInsightStories({
+      generatedAt: new Date(NOW_MS).toISOString(),
+      topStories: [
+        serverStory({
+          threatLevel: 'critical',
+          category: 'conflict',
+          importanceScore: 95,
+          isAlert: true,
+          uniqueSourceCount: 5,
+          velocity: { level: 'spike', sourcesPerHour: 4 },
+          pubDate: isoDaysAgo(0),
+          primaryTitle: 'Critical mil clash',
+        }),
+        serverStory({
+          threatLevel: 'high',
+          category: 'cyber',
+          importanceScore: 78,
+          uniqueSourceCount: 3,
+          velocity: { level: 'elevated', sourcesPerHour: 2 },
+          pubDate: isoDaysAgo(0),
+          primaryTitle: 'Likely cyber campaign',
+        }),
+        serverStory({
+          threatLevel: 'high',
+          category: 'diplomatic',
+          importanceScore: 75,
+          uniqueSourceCount: 3,
+          pubDate: isoDaysAgo(1),
+          primaryTitle: 'Likely diplomatic break',
+        }),
+        serverStory({
+          threatLevel: 'medium',
+          category: 'economic',
+          importanceScore: 55,
+          uniqueSourceCount: 2,
+          pubDate: isoDaysAgo(1),
+          primaryTitle: 'Possible market shock',
+        }),
+        serverStory({
+          threatLevel: 'info',
+          category: 'general',
+          importanceScore: 10,
+          pubDate: isoDaysAgo(2),
+          primaryTitle: 'Background chatter',
+        }),
+      ],
+    });
+    const state = buildThreatTimelineState(items, { nowMs: NOW_MS });
+    const summary = summarizeProbableScenariosRisk(state);
+
+    assert.equal(summary.elevatedCount, 3);
+    assert.equal(summary.possibleCount, 1);
+    assert.ok(summary.compositeScore >= 40);
+    assert.ok(summary.compositeScore <= 100);
+    assert.ok(summary.topRisks[0]?.includes('Critical mil clash'));
+    assert.ok(summary.topRisks[0]?.includes('%'));
+    assert.ok(summary.activeDomains >= 3);
+    assert.equal(summary.topThreatIndicators.length, 3);
+    assert.ok(summary.topThreatIndicators.length <= 5);
+    assert.equal(summary.topThreatIndicators[0]?.title, 'Critical mil clash');
+    assert.ok(summary.topThreatIndicators[0]?.indicators.length);
+  });
+
+  it('evaluates scenario likelihood from strategic indicator signals', () => {
+    const low = evaluateScenarioLikelihood({
+      category: 'general',
+      importanceScore: 12,
+      rawThreatLevel: 'info',
+    });
+    assert.equal(low.category, 'info');
+    assert.ok(low.probability < 25);
+
+    const high = evaluateScenarioLikelihood({
+      category: 'conflict',
+      importanceScore: 92,
+      isAlert: true,
+      sourceCount: 5,
+      velocityLevel: 'spike',
+      velocitySourcesPerHour: 5,
+      rawThreatLevel: 'critical',
+    });
+    assert.ok(high.probability >= 65);
+    assert.ok(high.category === 'high' || high.category === 'critical');
   });
 
   it('surfaces empty and degraded states without throwing away the 7-day scaffold', () => {
@@ -407,45 +590,56 @@ describe('ThreatTimelinePanel utilities', () => {
       primaryTitle: 'Protests spread after blackout',
       primarySource: 'Regional RSS',
       primaryLink: 'https://example.com/cluster',
-      sourceCount: 1,
+      sourceCount: 3,
+      uniquePublisherCount: 3,
       topSources: [{ name: 'Regional RSS', tier: 2, url: 'https://example.com/source' }],
       allItems: [],
       firstSeen: new Date(isoDaysAgo(1)),
       lastUpdated: new Date(isoDaysAgo(0)),
       isAlert: true,
+      velocity: { level: 'elevated', sourcesPerHour: 2, trend: 'rising' },
       threat: { level: 'high', category: 'protest', confidence: 0.8, source: 'keyword' },
     }]);
 
     assert.equal(items[0]?.provenance, 'Keyword fallback');
     assert.equal(items[0]?.threatLevel, 'high');
+    assert.ok((items[0]?.probability ?? 0) >= 65);
   });
 
   it('describes quiet, worsening, easing, and noisy threat trends', () => {
+    const elevated = {
+      category: 'conflict',
+      importanceScore: 85,
+      uniqueSourceCount: 3,
+      velocity: { level: 'elevated', sourcesPerHour: 2 },
+      isAlert: true,
+    };
+
     assert.deepEqual(
       trendForStories([serverStory({ threatLevel: 'info', pubDate: isoDaysAgo(0) })]),
-      { label: 'Quiet', copy: 'No critical/high days', className: 'quiet' },
+      { label: 'Quiet', copy: 'No highly likely/likely days', className: 'quiet' },
     );
 
     assert.deepEqual(
       trendForStories([
-        serverStory({ threatLevel: 'high', pubDate: isoDaysAgo(0), primaryTitle: 'Recent high' }),
-        serverStory({ threatLevel: 'critical', pubDate: isoDaysAgo(1), primaryTitle: 'Recent critical' }),
+        serverStory({ ...elevated, threatLevel: 'high', pubDate: isoDaysAgo(0), primaryTitle: 'Recent high' }),
+        serverStory({ ...elevated, threatLevel: 'critical', importanceScore: 95, pubDate: isoDaysAgo(1), primaryTitle: 'Recent critical' }),
       ]),
       { label: 'Worsening', copy: '2 recent vs 0 earlier', className: 'worsening' },
     );
 
     assert.deepEqual(
       trendForStories([
-        serverStory({ threatLevel: 'high', pubDate: isoDaysAgo(6), primaryTitle: 'Earlier high' }),
-        serverStory({ threatLevel: 'critical', pubDate: isoDaysAgo(5), primaryTitle: 'Earlier critical' }),
+        serverStory({ ...elevated, threatLevel: 'high', pubDate: isoDaysAgo(6), primaryTitle: 'Earlier high' }),
+        serverStory({ ...elevated, threatLevel: 'critical', importanceScore: 95, pubDate: isoDaysAgo(5), primaryTitle: 'Earlier critical' }),
       ]),
       { label: 'Easing', copy: '0 recent vs 2 earlier', className: 'easing' },
     );
 
     assert.deepEqual(
       trendForStories([
-        serverStory({ threatLevel: 'high', pubDate: isoDaysAgo(6), primaryTitle: 'Earlier high' }),
-        serverStory({ threatLevel: 'high', pubDate: isoDaysAgo(0), primaryTitle: 'Recent high' }),
+        serverStory({ ...elevated, threatLevel: 'high', pubDate: isoDaysAgo(6), primaryTitle: 'Earlier high' }),
+        serverStory({ ...elevated, threatLevel: 'high', pubDate: isoDaysAgo(0), primaryTitle: 'Recent high' }),
       ]),
       { label: 'Noisy', copy: '1 recent vs 1 earlier', className: 'noisy' },
     );
@@ -459,14 +653,17 @@ describe('ThreatTimelinePanel registration', () => {
     const dataLoaderSrc = readFileSync(resolve(root, 'src/app/data-loader.ts'), 'utf-8');
     const commandsSrc = readFileSync(resolve(root, 'src/config/commands.ts'), 'utf-8');
 
-    assert.match(panelsSrc, /'threat-timeline':\s*\{\s*name:\s*'Threat Timeline'/);
+    assert.match(panelsSrc, /'threat-timeline':\s*\{\s*name:\s*'Probable Scenarios'/);
     assert.match(panelsSrc, /intelligence:\s*\{[\s\S]*panelKeys:\s*\[[^\]]*'threat-timeline'/);
     assert.match(layoutSrc, /isPanelInVariantDefaults\('threat-timeline'\)[\s\S]*lazyDefaultPanel\('threat-timeline',\s*\(\)\s*=>\s*import\('@\/components\/ThreatTimelinePanel'\),\s*'ThreatTimelinePanel'\)/);
     // Queued through callPanel(), never a direct `panels['threat-timeline']`
     // lookup — the panel is a deferred shell when clustering finishes on mobile.
     // See tests/one-shot-loader-panel-delivery.test.mts for the per-arm guard.
     assert.match(dataLoaderSrc, /isPanelInVariantDefaults\('threat-timeline'\)[\s\S]*this\.callPanel\('threat-timeline', 'refresh',/);
-    assert.match(commandsSrc, /id:\s*'panel:threat-timeline'[\s\S]*keywords:\s*\[[^\]]*'threat trend'/);
+    assert.match(commandsSrc, /id:\s*'panel:threat-timeline'[\s\S]*PANEL_SEARCH_ALIASES\['threat-timeline'\]/);
+    const aliasesSrc = readFileSync(resolve(root, 'src/config/panel-search-aliases.ts'), 'utf-8');
+    assert.match(aliasesSrc, /'threat-timeline':\s*\[[\s\S]*'probable scenarios'/);
+    assert.match(aliasesSrc, /'threat-timeline':\s*\[[\s\S]*'threat trend'/);
   });
 });
 
@@ -487,8 +684,11 @@ describe('ThreatTimelinePanel refresh behavior', () => {
       await waitForPanelRender();
 
       assert.match(contentEl.innerHTML, /Fresh server-backed escalation/);
-      assert.ok(badgeEl.classList.contains('live'), 'precondition: live server snapshot is rendered');
-      assert.match(badgeEl.textContent ?? '', /Insights snapshot/);
+      assert.equal(
+        (badgeEl as HTMLElement).style.display,
+        'none',
+        'Probable Scenarios hides the live/cached data badge pill',
+      );
 
       __resetServerInsightsCacheForTests();
       let fetchCalls = 0;
@@ -502,11 +702,13 @@ describe('ThreatTimelinePanel refresh behavior', () => {
 
       assert.equal(fetchCalls, 1, 'refresh attempted the on-demand insights fetch');
       assert.match(contentEl.innerHTML, /Fallback protests spread after outage/);
-      assert.match(contentEl.innerHTML, /Keyword fallback/);
+      assert.match(contentEl.innerHTML, /threat-timeline-domain/);
+      assert.match(contentEl.innerHTML, /Pol/);
+      assert.match(contentEl.innerHTML, /threat-timeline-sources/);
+      assert.match(contentEl.innerHTML, /Threat Indicators|CSS Mtg|Provocative|Ldrship|threat-timeline-indicators/);
       assert.match(contentEl.innerHTML, /Server insight snapshot unavailable/);
       assert.doesNotMatch(contentEl.innerHTML, /Fresh server-backed escalation/, 'degraded fallback replaces stale server content');
-      assert.ok(badgeEl.classList.contains('cached'), 'degraded fallback is visibly badged as cached/degraded');
-      assert.match(badgeEl.textContent ?? '', /degraded/);
+      assert.equal((badgeEl as HTMLElement).style.display, 'none', 'degraded path still keeps the data badge hidden');
 
       const recovered = runtimeServerInsights({
         topStories: [
@@ -529,10 +731,51 @@ describe('ThreatTimelinePanel refresh behavior', () => {
       assert.match(contentEl.innerHTML, /Recovered server-backed escalation/);
       assert.doesNotMatch(contentEl.innerHTML, /Fallback protests spread after outage/);
       assert.doesNotMatch(contentEl.innerHTML, /Server insight snapshot unavailable/);
-      assert.ok(badgeEl.classList.contains('live'), 'server recovery restores the live badge');
+      assert.equal((badgeEl as HTMLElement).style.display, 'none', 'recovery keeps the data badge hidden');
     } finally {
       panel.destroy();
       harness.cleanup();
+    }
+  });
+
+  it('publishes Probable Scenarios risk summary for Strategic Risk Overview', async () => {
+    const harness = await loadThreatTimelinePanelHarness();
+    const {
+      ThreatTimelinePanel,
+      __resetProbableScenariosRiskForTests,
+      getProbableScenariosRiskSummary,
+    } = harness;
+    __resetProbableScenariosRiskForTests();
+    const panel = new ThreatTimelinePanel();
+    try {
+      assert.equal(getProbableScenariosRiskSummary(), null);
+
+      panel.updateFromServerInsights(runtimeServerInsights({
+        topStories: [
+          serverStory({
+            primaryTitle: 'Published scenario for strategic risk',
+            primarySource: 'ACLED',
+            pubDate: runtimeIsoDaysAgo(0),
+            threatLevel: 'high',
+            category: 'conflict',
+            importanceScore: 82,
+            uniqueSourceCount: 3,
+            isAlert: true,
+            velocity: { level: 'elevated', sourcesPerHour: 2 },
+          }),
+        ],
+      }));
+      await waitForPanelRender();
+
+      const summary = getProbableScenariosRiskSummary();
+      assert.ok(summary);
+      assert.equal(summary.elevatedCount, 1);
+      assert.ok(summary.topRisks.some((risk: string) => risk.includes('Published scenario for strategic risk')));
+      assert.ok(summary.compositeScore > 0);
+    } finally {
+      panel.destroy();
+      harness.cleanup();
+      __resetProbableScenariosRiskForTests();
     }
   });
 

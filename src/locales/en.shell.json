@@ -15,7 +15,7 @@
     "search": "Search",
     "settings": "SETTINGS",
     "sources": "SOURCES",
-    "copyLink": "Link",
+    "copyLink": "Chat",
     "embed": "Embed",
     "downloadApp": "Download App",
     "fullscreen": "Fullscreen",
@@ -96,6 +96,7 @@
     "status": "System Status",
     "insights": "AI Insights",
     "strategicPosture": "AI Strategic Posture",
+    "threatTimeline": "Probable Scenarios",
     "cii": "Country Instability",
     "strategicRisk": "Strategic Risk Overview",
     "intel": "Intel Feed",
@@ -513,7 +514,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "Daily Threat Briefs",
+      "headline": "Strategic Threat Intelligence Platform",
       "tagline": "plus WM Analyst, alert rules and MCP for Claude",
       "cta": "Upgrade to Pro →",
       "dismiss": "Dismiss"
@@ -762,7 +763,7 @@
       "infoTooltip": "<strong>Methodology</strong><p>Aggregates military aircraft and naval vessels by theater.</p><ul><li><strong>Normal:</strong> Baseline activity</li><li><strong>Elevated:</strong> Above threshold (50+ aircraft)</li><li><strong>Critical:</strong> High concentration (100+ aircraft)</li></ul><p><strong>Strike Capable:</strong> Tankers + Airborne early warning + Fighters present in sufficient numbers for sustained operations.</p>"
     },
     "strategicRisk": {
-      "infoTooltip": "<strong>Methodology</strong> Composite score (0-100) blending:<ul><li>50% Country Instability (top 5 weighted)</li><li>30% Geographic convergence zones</li><li>20% Infrastructure incidents</li></ul>Auto-refreshes every 5 minutes."
+      "infoTooltip": "<strong>Methodology</strong> Composite score (0-100) derived from Probable Scenarios <code>P(S)</code>:<ul><li>Mean scenario likelihood blended with elevated-band pressure</li><li>Bands: Highly Unlikely &lt;25, Unlikely &lt;50, Possible &lt;65, Likely &lt;80, Highly Likely ≥80</li><li>Indicators: military, diplomatic, political, economic, intelligence</li></ul>Falls back to cached Country Instability scores when scenario data is unavailable."
     },
     "supplyChain": {
       "infoTooltip": "<strong>Supply Chain Monitor</strong> Global logistics and resource tracking:<ul><li><strong>Chokepoints</strong>: Maritime transit status, disruption scores, and vessel counts</li><li><strong>Shipping</strong>: Baltic Dry Index and freight rate trends</li><li><strong>Minerals</strong>: Critical mineral concentration risk (producer concentration index) and top producers</li></ul>Click a chokepoint card to expand transit history chart."

@@ -1,5 +1,6 @@
 import type { MapLayers } from '@/types';
 import { CURATED_COUNTRIES } from '@/config/countries';
+import { PANEL_SEARCH_ALIASES } from '@/config/panel-search-aliases';
 // boundary-ignore: commands are built lazily at runtime via getAllCommands()
 import { getCurrentLanguage, getCurrentLanguageTag, t } from '@/services/i18n';
 import { toFlagEmoji } from '@/utils/country-flag';
@@ -97,7 +98,7 @@ export const COMMANDS: Command[] = [
   { id: 'panel:cii', keywords: ['cii', 'instability', 'country risk'], label: 'Panel: Country Instability', icon: '\u{1F3AF}', category: 'panels' },
   { id: 'panel:cascade', keywords: ['cascade', 'infrastructure cascade', 'cascading failure', 'contagion'], label: 'Panel: Infrastructure Cascade', icon: '\u{1F517}', category: 'panels' },
   { id: 'panel:strategic-risk', keywords: ['risk', 'strategic risk', 'threat level'], label: 'Panel: Strategic Risk', icon: '\u26A0\uFE0F', category: 'panels' },
-  { id: 'panel:threat-timeline', keywords: ['threat timeline', 'threat levels', 'threat trend', 'security escalation'], label: 'Panel: Threat Timeline', icon: '\u26A0\uFE0F', category: 'panels' },
+  { id: 'panel:threat-timeline', keywords: [...PANEL_SEARCH_ALIASES['threat-timeline']!], label: 'Panel: Probable Scenarios', icon: '\u26A0\uFE0F', category: 'panels' },
   { id: 'panel:toronto-safety', keywords: ['toronto safety', 'tps crime', 'calls attended', 'major crime indicators'], label: 'Panel: Toronto Safety', icon: '\u{1F6E1}\uFE0F', category: 'panels' },
   { id: 'panel:cross-source-signals', keywords: ['cross source', 'signal aggregator', 'composite escalation', 'multi signal'], label: 'Panel: Cross-Source Signals', icon: '\u{1F4E1}', category: 'panels' },
   { id: 'panel:politics', keywords: ['world news', 'politics', 'geopolitics'], label: 'Panel: World News', icon: '\u{1F30D}', category: 'panels' },
@@ -161,7 +162,6 @@ export const COMMANDS: Command[] = [
   { id: 'panel:ukmto-incidents', keywords: ['ukmto', 'maritime', 'incidents'], label: 'Panel: UKMTO Incidents', icon: '⚓', category: 'panels' },
   { id: 'panel:monitors', keywords: ['monitors', 'my monitors', 'watchlist'], label: 'Panel: My Monitors', icon: '\u{1F4CB}', category: 'panels' },
   { id: 'panel:map', keywords: ['map', 'globe', 'global map'], label: 'Panel: Global Map', icon: '\u{1F5FA}\uFE0F', category: 'panels' },
-  { id: 'panel:live-webcams', keywords: ['webcams', 'live cameras', 'cctv'], label: 'Panel: Live Webcams', icon: '\u{1F4F7}', category: 'panels' },
   { id: 'panel:windy-webcams', keywords: ['windy', 'weather cam', 'weather webcam', 'weather cameras'], label: 'Panel: Live Weather Cams', icon: '\u{1F4F9}', category: 'panels' },
   { id: 'panel:chat-analyst', keywords: ['wm analyst', 'analyst', 'ai analyst', 'chat analyst', 'ask ai', 'intelligence analyst'], label: 'Panel: WM Analyst', icon: '\u{1F916}', category: 'panels' },
   { id: 'panel:insights', keywords: ['insights', 'ai insights', 'analysis'], label: 'Panel: AI Insights', icon: '\u{1F4A1}', category: 'panels' },

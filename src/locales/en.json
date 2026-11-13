@@ -403,7 +403,7 @@
     "search": "Search",
     "settings": "SETTINGS",
     "sources": "SOURCES",
-    "copyLink": "Link",
+    "copyLink": "Chat",
     "embed": "Embed",
     "downloadApp": "Download App",
     "fullscreen": "Fullscreen",
@@ -484,6 +484,7 @@
     "status": "System Status",
     "insights": "AI Insights",
     "strategicPosture": "AI Strategic Posture",
+    "threatTimeline": "Probable Scenarios",
     "cii": "Country Instability",
     "strategicRisk": "Strategic Risk Overview",
     "intel": "Intel Feed",
@@ -1814,8 +1815,14 @@
       "ciiDeviation": "Country Instability Index Deviation",
       "infraEvents": "Infra Events",
       "highAlerts": "High Alerts",
+      "elevatedScenarios": "Highly Likely / Likely",
+      "possibleScenarios": "Possible",
+      "activeDomains": "Active Domains",
+      "totalScenarios": "Total Scenarios",
       "dataFreshness": "Data Freshness",
       "sourcesDetail": "{{active}}/{{total}} sources",
+      "scenariosDetail": "{{count}} scenarios",
+      "scenariosStatus": "Probable Scenarios {{states}}",
       "topRisks": "Top Risks",
       "recentAlerts": "Recent Alerts ({{count}})",
       "updated": "Updated: {{time}}",
@@ -1824,7 +1831,7 @@
         "minutesAgo": "{{count}}m ago",
         "hoursAgo": "{{count}}h ago"
       },
-      "infoTooltip": "<strong>Methodology</strong> Composite score (0-100) blending:<ul><li>50% Country Instability (top 5 weighted)</li><li>30% Geographic convergence zones</li><li>20% Infrastructure incidents</li></ul>Auto-refreshes every 5 minutes."
+      "infoTooltip": "<strong>Methodology</strong> Composite score (0-100) derived from Probable Scenarios <code>P(S)</code>:<ul><li>Mean scenario likelihood blended with elevated-band pressure</li><li>Bands: Highly Unlikely &lt;25, Unlikely &lt;50, Possible &lt;65, Likely &lt;80, Highly Likely ≥80</li><li>Indicators: military, diplomatic, political, economic, intelligence</li></ul>Falls back to cached Country Instability scores when scenario data is unavailable."
     },
     "techEvents": {
       "infoTooltip": "<strong>Tech Events</strong> Upcoming and recent technology events: conferences, product launches, regulatory hearings, and earnings calls. Aggregated from official event calendars and industry sources.",
@@ -2535,25 +2542,25 @@
       "loadError": "Climate news temporarily unavailable"
     },
     "domainPolitical": {
-      "infoTooltip": "<strong>Political</strong> Domestic politics, legislation, elections, and government authority signals."
+      "infoTooltip": "<strong>Critical Thresholds</strong> CSS Mtg(s), Ldrship succession uncertainity, Provocative statements by Govt officials/ oppn Idrs"
     },
     "domainDiplomatic": {
-      "infoTooltip": "<strong>Diplomatic</strong> Embassy actions, demarches, summits, and bilateral protest signals."
+      "infoTooltip": "<strong>Critical Thresholds</strong> Ambassador recalls, Treaty violations, Travel advisories"
     },
     "domainInternational": {
-      "infoTooltip": "<strong>International</strong> Multilateral institutions, treaties, and cross-border governance developments."
+      "infoTooltip": "<strong>Critical Thresholds</strong> Frenzy media campaigns / State-sponsored narr, Inc Cover/ LO's activities, Int gaps req urgent collection"
     },
     "domainCyber": {
-      "infoTooltip": "<strong>Cyber</strong> Intrusions, ransomware, infrastructure attacks, and defensive cyber alerts."
+      "infoTooltip": "<strong>Critical Thresholds</strong> tgt of natl power grids, Interference with nuc C2 sys, Natl financial sys paralysis"
     },
     "domainEconomy": {
-      "infoTooltip": "<strong>Economy</strong> Monetary policy, inflation, markets, and macro stress headlines."
+      "infoTooltip": "<strong>Critical Thresholds</strong> Tgt water scty, Tgt overseas assets, commodity shortages"
     },
     "domainTech": {
-      "infoTooltip": "<strong>Technological</strong> Innovation policy, AI regulation, and dual-use technology developments."
+      "infoTooltip": "<strong>Critical Thresholds</strong> Ctr-space readiness, Inc space based ISR over strat tgts, AI, Swarm techs DEWS drones"
     },
     "domainHealth": {
-      "infoTooltip": "<strong>Health &amp; Env</strong> Outbreaks, public health alerts, and environmental risk signals."
+      "infoTooltip": "<strong>Critical Thresholds</strong> Food insecurity/water shortages, Unexplained disease clusters, Eco-sys damaging tech"
     },
     "chatAnalyst": {
       "infoTooltip": "<strong>WM Analyst</strong> AI analyst with live context across geopolitical, market, military, and economic domains. Powered by Claude with real-time data injected from active WorldMonitor feeds."
@@ -2751,7 +2758,7 @@
     },
     "proBanner": {
       "badge": "PRO",
-      "headline": "Daily Threat Briefs",
+      "headline": "Strategic Threat Intelligence Platform",
       "tagline": "plus WM Analyst, alert rules and MCP for Claude",
       "cta": "Upgrade to Pro →",
       "dismiss": "Dismiss"

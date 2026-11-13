@@ -20,6 +20,11 @@ import {
 import type { CountryScore } from '@/services/country-instability';
 import { fetchCachedRiskScores, isElevatedCiiScore, toCountryScore, type CachedRiskScores } from '@/services/cached-risk-scores';
 import { getCachedPosture } from '@/services/cached-theater-posture';
+import {
+  getProbableScenariosRiskSummary,
+  PROBABLE_SCENARIOS_UPDATED_EVENT,
+  type ProbableScenariosRiskSummary,
+} from '@/services/probable-scenarios-risk';
 import { trustedHtml } from '@/utils/dom-utils';
 import { bindActivationKeys } from '@/utils/activation';
 
@@ -47,7 +52,9 @@ export class StrategicRiskPanel extends Panel {
   private onLocationClick?: (lat: number, lon: number) => void;
   private breakingAlerts: Map<string, { threatLevel: 'critical' | 'high'; timestamp: number }> = new Map();
   private boundOnBreaking: ((e: Event) => void) | null = null;
+  private boundOnScenarios: (() => void) | null = null;
   private breakingExpiryTimer: ReturnType<typeof setTimeout> | null = null;
+  private scenarioSummary: ProbableScenariosRiskSummary | null = null;
 
   constructor() {
     super({
@@ -87,6 +94,11 @@ export class StrategicRiskPanel extends Panel {
         this.refresh();
       };
       document.addEventListener('wm:breaking-news', this.boundOnBreaking);
+
+      this.boundOnScenarios = () => {
+        void this.refresh();
+      };
+      document.addEventListener(PROBABLE_SCENARIOS_UPDATED_EVENT, this.boundOnScenarios);
 
       await this.refresh();
     } catch (error) {
@@ -134,6 +146,34 @@ export class StrategicRiskPanel extends Panel {
     const postures = cachedPosture?.postures;
     const staleFactor = cachedPosture?.stale ? 0.5 : 1;
 
+    this.alerts = getRecentAlerts(24);
+    this.scenarioSummary = getProbableScenariosRiskSummary();
+
+    // Probable Scenarios is the primary driver for Strategic Risk Overview.
+    if (this.scenarioSummary) {
+      const localOverview = calculateStrategicRiskOverview(
+        this.convergenceAlerts,
+        postures ?? undefined,
+        breakingScore,
+        staleFactor
+      );
+      this.applyScenarioRiskOverview(this.scenarioSummary, localOverview);
+      this.setDataBadge(
+        this.scenarioSummary.degraded ? 'cached' : 'live',
+        t('components.strategicRisk.scenariosDetail', {
+          count: String(this.scenarioSummary.totalItems),
+        }) || `${this.scenarioSummary.totalItems} scenarios`,
+      );
+      console.log('[StrategicRiskPanel] Using Probable Scenarios risk summary');
+      this.render();
+
+      const alertIds = this.alerts.map(a => a.id).sort().join(',');
+      const fp = `scenarios|${this.overview?.compositeScore}|${this.overview?.trend}|${alertIds}`;
+      const changed = fp !== this.lastRiskFingerprint;
+      this.lastRiskFingerprint = fp;
+      return changed;
+    }
+
     // Prefer server/cached scores before calculating the overview so the
     // cross-module alert baseline is not seeded from local CII on first refresh.
     const cachedRiskScores = await fetchCachedRiskScores(this.signal);
@@ -142,11 +182,14 @@ export class StrategicRiskPanel extends Panel {
     if (!cachedRiskScores) {
       this.overview = null;
       this.alerts = [];
+      this.scenarioSummary = null;
       this.setDataBadge('unavailable');
       this.showError(t('common.failedRiskOverview'), () => void this.refresh());
       console.warn('[StrategicRiskPanel] Canonical backend risk scores unavailable');
       return false;
     }
+
+    this.scenarioSummary = null;
 
     const localOverview = calculateStrategicRiskOverview(
       this.convergenceAlerts,
@@ -155,7 +198,6 @@ export class StrategicRiskPanel extends Panel {
       staleFactor
     );
     this.overview = localOverview;
-    this.alerts = getRecentAlerts(24);
 
     this.applyCachedRiskOverview(cachedRiskScores, localOverview);
     console.log('[StrategicRiskPanel] Using cached scores from backend');
@@ -175,6 +217,25 @@ export class StrategicRiskPanel extends Panel {
     const changed = fp !== this.lastRiskFingerprint;
     this.lastRiskFingerprint = fp;
     return changed;
+  }
+
+  private applyScenarioRiskOverview(
+    summary: ProbableScenariosRiskSummary,
+    localOverview: StrategicRiskOverview,
+  ): void {
+    this.overview = {
+      ...localOverview,
+      avgCIIDeviation: summary.compositeScore,
+      compositeScore: summary.compositeScore,
+      trend: summary.trend,
+      topRisks: summary.topRisks,
+      convergenceAlerts: summary.elevatedCount,
+      infrastructureIncidents: summary.possibleCount,
+      unstableCountries: [],
+      timestamp: summary.timestamp,
+      degraded: summary.degraded,
+      stale: false,
+    };
   }
 
   private cachedTrendToOverviewTrend(trend: string): StrategicRiskOverview['trend'] {
@@ -332,9 +393,12 @@ export class StrategicRiskPanel extends Panel {
       this.overview.degraded ? t('components.strategicRisk.sourceStates.degraded') : '',
       this.overview.stale ? t('components.strategicRisk.sourceStates.stale') : '',
     ].filter(Boolean);
+    const statusText = this.scenarioSummary
+      ? t('components.strategicRisk.scenariosStatus', { states: labels.join(' · ') })
+      : t('components.strategicRisk.cachedCiiStatus', { states: labels.join(' · ') });
     return `<div class="risk-status-banner risk-status-cached">
       <span class="risk-status-icon">!</span>
-      <span class="risk-status-text">${t('components.strategicRisk.cachedCiiStatus', { states: labels.join(' · ') })}</span>
+      <span class="risk-status-text">${statusText}</span>
     </div>`;
   }
 
@@ -367,6 +431,29 @@ export class StrategicRiskPanel extends Panel {
 
   private renderMetrics(): string {
     if (!this.overview) return '';
+
+    if (this.scenarioSummary) {
+      return `
+      <div class="risk-metrics">
+        <div class="risk-metric">
+          <span class="risk-metric-value">${this.scenarioSummary.elevatedCount}</span>
+          <span class="risk-metric-label">${t('components.strategicRisk.elevatedScenarios')}</span>
+        </div>
+        <div class="risk-metric">
+          <span class="risk-metric-value">${this.scenarioSummary.possibleCount}</span>
+          <span class="risk-metric-label">${t('components.strategicRisk.possibleScenarios')}</span>
+        </div>
+        <div class="risk-metric">
+          <span class="risk-metric-value">${this.scenarioSummary.activeDomains}</span>
+          <span class="risk-metric-label">${t('components.strategicRisk.activeDomains')}</span>
+        </div>
+        <div class="risk-metric">
+          <span class="risk-metric-value">${this.scenarioSummary.totalItems}</span>
+          <span class="risk-metric-label">${t('components.strategicRisk.totalScenarios')}</span>
+        </div>
+      </div>
+    `;
+    }
 
     const alertCounts = getAlertCount();
 
@@ -565,6 +652,10 @@ export class StrategicRiskPanel extends Panel {
     if (this.boundOnBreaking) {
       document.removeEventListener('wm:breaking-news', this.boundOnBreaking);
       this.boundOnBreaking = null;
+    }
+    if (this.boundOnScenarios) {
+      document.removeEventListener(PROBABLE_SCENARIOS_UPDATED_EVENT, this.boundOnScenarios);
+      this.boundOnScenarios = null;
     }
     if (this.breakingExpiryTimer) {
       clearTimeout(this.breakingExpiryTimer);

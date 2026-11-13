@@ -61,7 +61,6 @@ import { resolveNewsCategories, enabledNewsCategoryKeys } from '@/config/feed-re
 import { VARIANT_META } from '@/config/variant-meta';
 import { isDesktopRuntime } from '@/services/runtime';
 import {
-  getMissionPresetsForVariant,
   applyMissionPresetToState,
   clearMissionPreset,
   dismissMissionPresetPrompt,
@@ -73,6 +72,10 @@ import {
   type MissionPreset,
   type MissionPresetId,
 } from '@/services/mission-presets';
+import {
+  getLatestThreatIndicators,
+  type ProbableScenariosThreatIndicator,
+} from '@/services/probable-scenarios-risk';
 import {
   saveSnapshot,
   initAisStream,
@@ -365,6 +368,7 @@ export class EventHandlerManager implements AppModule {
   private boundMissionOutsideHandler: ((e: MouseEvent) => void) | null = null;
   private boundMissionKeydownHandler: ((e: KeyboardEvent) => void) | null = null;
   private boundEmbedModalKeydownHandler: ((e: KeyboardEvent) => void) | null = null;
+  private boundDummyChatKeydownHandler: ((e: KeyboardEvent) => void) | null = null;
   private missionPresetPopover: HTMLElement | null = null;
   private missionPresetReturnFocus: HTMLElement | null = null;
   private missionDataRefreshTimer: number | null = null;
@@ -530,6 +534,7 @@ export class EventHandlerManager implements AppModule {
 
   destroy(): void {
     this.closeEmbedDialog();
+    this.closeDummyChatDialog();
     this.debouncedUrlSync.cancel();
     this.debouncedWebcamReload.cancel();
     if (this.boundFullscreenHandler) {
@@ -722,17 +727,8 @@ export class EventHandlerManager implements AppModule {
   }
 
   private setupEventListeners(): void {
-    document.getElementById('copyLinkBtn')?.addEventListener('click', async () => {
-      const shareUrl = this.getShareUrl();
-      if (!shareUrl) return;
-      const button = document.getElementById('copyLinkBtn');
-      try {
-        await this.copyToClipboard(shareUrl);
-        this.setCopyLinkFeedback(button, 'Copied!');
-      } catch (error) {
-        console.warn('Failed to copy share link:', error);
-        this.setCopyLinkFeedback(button, 'Copy failed');
-      }
+    document.getElementById('copyLinkBtn')?.addEventListener('click', () => {
+      this.openDummyChatDialog();
     });
 
     document.getElementById('headerUploadBtn')?.addEventListener('click', () => {
@@ -1049,7 +1045,7 @@ export class EventHandlerManager implements AppModule {
     if (!mount) return;
 
     const active = loadStoredMissionPreset();
-    const label = active?.shortLabel ?? 'Mission';
+    const label = active?.shortLabel ?? 'Indicators';
     const icon = active?.icon ?? '◎';
     const activeClass = active ? ' mission-preset-button--active' : '';
     const suggestedClass = !active && !isMissionPresetPromptDismissed() ? ' mission-preset-button--suggested' : '';
@@ -1061,7 +1057,7 @@ export class EventHandlerManager implements AppModule {
         type="button"
         aria-haspopup="dialog"
         aria-expanded="false"
-        title="${escapeHtml(active ? `Mission: ${active.label}` : 'Choose mission preset')}"
+        title="${escapeHtml(active ? `Indicators: ${active.label}` : 'Choose indicators')}"
       >
         <span class="mission-preset-button__icon">${escapeHtml(icon)}</span>
         <span class="mission-preset-button__label">${escapeHtml(label)}</span>
@@ -1078,7 +1074,7 @@ export class EventHandlerManager implements AppModule {
   private updateMobileMissionLabel(active: MissionPreset | null = loadStoredMissionPreset()): void {
     const item = document.getElementById('mobileMenuMission');
     const label = item?.querySelector('.mobile-menu-item-label');
-    if (label) label.textContent = active ? `Mission: ${active.shortLabel}` : 'Mission';
+    if (label) label.textContent = active ? `Indicators: ${active.shortLabel}` : 'Indicators';
   }
 
   private toggleMissionPresetPopover(anchor: HTMLElement | null, mobile: boolean): void {
@@ -1103,11 +1099,11 @@ export class EventHandlerManager implements AppModule {
     // popover opens from the menu item instead, so remember the real opener.
     this.missionPresetReturnFocus = anchor ?? document.getElementById('missionPresetBtn');
 
-    const active = loadStoredMissionPreset();
+    const threatIndicators = getLatestThreatIndicators(5);
     const popover = document.createElement('div');
     popover.className = `mission-preset-popover${mobile ? ' mission-preset-popover--mobile' : ''}`;
     popover.setAttribute('role', 'dialog');
-    popover.setAttribute('aria-label', 'Mission presets');
+    popover.setAttribute('aria-label', 'Indicators');
     // Auto-opens after first paint for every preset-less user, and holds no
     // entered state — it re-appears on the next load. Without this, the
     // automatic reload guards treated it as work worth protecting and
@@ -1117,38 +1113,28 @@ export class EventHandlerManager implements AppModule {
     declareOverlay(popover, { reload: 'safe' });
     popover.tabIndex = -1;
 
-    const cards = getMissionPresetsForVariant(SITE_VARIANT).map((preset) => {
-      const selected = active?.id === preset.id;
-      return `
-        <button
-          type="button"
-          class="mission-preset-card${selected ? ' selected' : ''}"
-          data-mission-id="${escapeHtml(preset.id)}"
-          aria-pressed="${selected ? 'true' : 'false'}"
-        >
-          <span class="mission-preset-card__icon">${escapeHtml(preset.icon)}</span>
+    const cards = threatIndicators.length > 0
+      ? threatIndicators.map((indicator) => this.renderThreatIndicatorCard(indicator)).join('')
+      : `<div class="mission-preset-card mission-preset-card--empty" role="status">
           <span class="mission-preset-card__body">
-            <strong>${escapeHtml(preset.label)}</strong>
-            <small>${escapeHtml(preset.description)}</small>
+            <strong>No recent threat indicators</strong>
+            <small>Elevated Probable Scenarios will appear here as they arrive.</small>
           </span>
-          <span class="mission-preset-card__check">${selected ? '✓' : ''}</span>
-        </button>
-      `;
-    }).join('');
+        </div>`;
 
     setTrustedHtml(popover, trustedHtml(`
       <div class="mission-preset-popover__header">
         <div>
-          <span>Mission</span>
-          <strong>${escapeHtml(active?.label ?? 'Choose Workspace')}</strong>
+          <span>Indicators</span>
+          <strong>Latest Threat Indicators</strong>
         </div>
         <div class="mission-preset-popover__actions">
           <button type="button" class="mission-preset-reset" data-mission-reset>Reset</button>
-          <button type="button" class="mission-preset-close" data-mission-close aria-label="Close mission presets">×</button>
+          <button type="button" class="mission-preset-close" data-mission-close aria-label="Close indicators">×</button>
         </div>
       </div>
       <div class="mission-preset-popover__list">${cards}</div>
-    `, 'Mission preset popover renders static preset metadata with escaped values'));
+    `, 'Indicators popover renders latest Probable Scenarios threat items with escaped values'));
 
     document.body.appendChild(popover);
     this.missionPresetPopover = popover;
@@ -1183,10 +1169,10 @@ export class EventHandlerManager implements AppModule {
       this.closeMissionPresetPopover();
     };
     popover.addEventListener('keydown', this.boundMissionKeydownHandler);
-    popover.querySelectorAll<HTMLButtonElement>('[data-mission-id]').forEach((button) => {
+    popover.querySelectorAll<HTMLButtonElement>('[data-threat-indicator-id]').forEach((button) => {
       button.addEventListener('click', () => {
-        const presetId = button.dataset.missionId as MissionPresetId | undefined;
-        if (presetId) this.applyMissionPreset(presetId);
+        this.focusProbableScenariosPanel();
+        this.closeMissionPresetPopover();
       });
     });
 
@@ -1343,6 +1329,37 @@ export class EventHandlerManager implements AppModule {
       trackMapLayerToggle(layer, enabled, 'programmatic');
       this.runMapLayerSideEffects(layer, enabled);
     }
+  }
+
+  private renderThreatIndicatorCard(indicator: ProbableScenariosThreatIndicator): string {
+    const title = indicator.title.length > 88
+      ? `${indicator.title.slice(0, 85)}...`
+      : indicator.title;
+    const chips = indicator.indicators.slice(0, 3).join(' · ');
+    return `
+      <button
+        type="button"
+        class="mission-preset-card mission-preset-card--threat"
+        data-threat-indicator-id="${escapeHtml(indicator.id)}"
+      >
+        <span class="mission-preset-card__icon">${escapeHtml(indicator.domain)}</span>
+        <span class="mission-preset-card__body">
+          <strong>${escapeHtml(title)}</strong>
+          <small>${escapeHtml(indicator.levelLabel)} · ${indicator.probability.toFixed(1)}%${chips ? ` · ${escapeHtml(chips)}` : ''}</small>
+        </span>
+      </button>
+    `;
+  }
+
+  private focusProbableScenariosPanel(): void {
+    const panel = document.querySelector<HTMLElement>('[data-panel="threat-timeline"]');
+    if (!panel) {
+      showToast('Open Probable Scenarios to review threat indicators.');
+      return;
+    }
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    panel.classList.add('panel-highlight');
+    window.setTimeout(() => panel.classList.remove('panel-highlight'), 1200);
   }
 
   private limitMissionPanels(panelSettings: Record<string, PanelConfig>): Record<string, PanelConfig> {
@@ -1855,6 +1872,130 @@ export class EventHandlerManager implements AppModule {
     if (this.boundEmbedModalKeydownHandler) {
       document.removeEventListener('keydown', this.boundEmbedModalKeydownHandler);
       this.boundEmbedModalKeydownHandler = null;
+    }
+  }
+
+  private openDummyChatDialog(): void {
+    this.closeDummyChatDialog();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'dummy-chat-overlay active';
+    overlay.id = 'dummyChatOverlay';
+    overlay.setAttribute('role', 'presentation');
+
+    const dialog = document.createElement('div');
+    dialog.className = 'dummy-chat-modal';
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-labelledby', 'dummyChatTitle');
+    declareOverlay(dialog, { reload: 'safe' });
+
+    const header = document.createElement('div');
+    header.className = 'dummy-chat-header';
+    const title = document.createElement('h2');
+    title.id = 'dummyChatTitle';
+    title.textContent = 'Chat';
+    const subtitle = document.createElement('p');
+    subtitle.className = 'dummy-chat-subtitle';
+    subtitle.textContent = 'Ask anything — demo replies (no live AI yet).';
+    const closeButton = document.createElement('button');
+    closeButton.className = 'dummy-chat-close';
+    closeButton.type = 'button';
+    closeButton.setAttribute('aria-label', 'Close chat');
+    closeButton.textContent = '×';
+    const headerText = document.createElement('div');
+    headerText.append(title, subtitle);
+    header.append(headerText, closeButton);
+
+    const messages = document.createElement('div');
+    messages.className = 'dummy-chat-messages';
+    messages.setAttribute('aria-live', 'polite');
+
+    const appendMessage = (role: 'user' | 'assistant', text: string) => {
+      const row = document.createElement('div');
+      row.className = `dummy-chat-bubble dummy-chat-bubble--${role}`;
+      const label = document.createElement('span');
+      label.className = 'dummy-chat-bubble-label';
+      label.textContent = role === 'user' ? 'You' : 'Assistant';
+      const body = document.createElement('p');
+      body.textContent = text;
+      row.append(label, body);
+      messages.appendChild(row);
+      messages.scrollTop = messages.scrollHeight;
+    };
+
+    appendMessage(
+      'assistant',
+      'Hi — I am a demo chat assistant. Ask a general question and I will reply with a placeholder answer.',
+    );
+
+    const form = document.createElement('form');
+    form.className = 'dummy-chat-form';
+    const input = document.createElement('textarea');
+    input.className = 'dummy-chat-input';
+    input.rows = 2;
+    input.placeholder = 'Ask a general question…';
+    input.setAttribute('aria-label', 'Chat message');
+    const sendButton = document.createElement('button');
+    sendButton.className = 'dummy-chat-send';
+    sendButton.type = 'submit';
+    sendButton.textContent = 'Send';
+    form.append(input, sendButton);
+
+    const replyFor = (prompt: string): string => {
+      const q = prompt.trim().toLowerCase();
+      if (!q) return 'Send a short question and I will answer in this demo chat.';
+      if (/\b(hello|hi|hey)\b/.test(q)) return 'Hello! This is a local demo chat — no upstream AI is called yet.';
+      if (/\b(who|what)\b.*\byou\b/.test(q)) {
+        return 'I am a placeholder assistant for Strat Threat Int. Wire me to a real model when you are ready.';
+      }
+      if (/\b(weather|news|market|conflict|risk)\b/.test(q)) {
+        return `Demo reply about “${prompt.trim()}”: check the dashboard panels for live signals; this chat is still mock-only.`;
+      }
+      return `Thanks for asking about “${prompt.trim()}”. This is a dummy response so you can try the Chat UI.`;
+    };
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      appendMessage('user', text);
+      input.value = '';
+      sendButton.disabled = true;
+      window.setTimeout(() => {
+        appendMessage('assistant', replyFor(text));
+        sendButton.disabled = false;
+        input.focus();
+      }, 350);
+    });
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
+    closeButton.addEventListener('click', () => this.closeDummyChatDialog());
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) this.closeDummyChatDialog();
+    });
+    this.boundDummyChatKeydownHandler = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') this.closeDummyChatDialog();
+    };
+    document.addEventListener('keydown', this.boundDummyChatKeydownHandler);
+
+    dialog.append(header, messages, form);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    input.focus();
+  }
+
+  private closeDummyChatDialog(): void {
+    document.getElementById('dummyChatOverlay')?.remove();
+    if (this.boundDummyChatKeydownHandler) {
+      document.removeEventListener('keydown', this.boundDummyChatKeydownHandler);
+      this.boundDummyChatKeydownHandler = null;
     }
   }
 

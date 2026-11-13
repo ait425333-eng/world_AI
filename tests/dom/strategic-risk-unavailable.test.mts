@@ -15,7 +15,13 @@ vi.mock('@/services/cached-theater-posture', async (importOriginal) => ({
   getCachedPosture: vi.fn().mockReturnValue(null),
 }));
 
+vi.mock('@/services/probable-scenarios-risk', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/services/probable-scenarios-risk')>(),
+  getProbableScenariosRiskSummary: vi.fn().mockReturnValue(null),
+}));
+
 import { StrategicRiskPanel } from '@/components/StrategicRiskPanel';
+import { getProbableScenariosRiskSummary } from '@/services/probable-scenarios-risk';
 
 interface TestPanelState {
   overview: { compositeScore: number } | null;
@@ -26,8 +32,11 @@ interface TestPanelState {
   breakingExpiryTimer: ReturnType<typeof setTimeout> | null;
   abortController: AbortController;
   element: HTMLElement;
+  scenarioSummary: unknown;
+  lastRiskFingerprint: string;
   setDataBadge: ReturnType<typeof vi.fn>;
   showError: ReturnType<typeof vi.fn>;
+  render: ReturnType<typeof vi.fn>;
 }
 
 it('clears stale Strategic Risk state when canonical scores are unavailable', async () => {
@@ -40,8 +49,11 @@ it('clears stale Strategic Risk state when canonical scores are unavailable', as
     breakingExpiryTimer: null,
     abortController: new AbortController(),
     element: document.createElement('section'),
+    scenarioSummary: null,
+    lastRiskFingerprint: '',
     setDataBadge: vi.fn(),
     showError: vi.fn(),
+    render: vi.fn(),
   };
   document.body.append(state.element);
 
@@ -54,4 +66,48 @@ it('clears stale Strategic Risk state when canonical scores are unavailable', as
   expect(panelState.alerts).toEqual([]);
   expect(panelState.setDataBadge).toHaveBeenCalledWith('unavailable');
   expect(panelState.showError).toHaveBeenCalledOnce();
+});
+
+it('prefers Probable Scenarios summary over cached Country Instability scores', async () => {
+  vi.mocked(getProbableScenariosRiskSummary).mockReturnValue({
+    compositeScore: 64,
+    trend: 'escalating',
+    topRisks: ['Mil: Border clashes intensify'],
+    topThreatIndicators: [],
+    elevatedCount: 3,
+    possibleCount: 2,
+    activeDomains: 4,
+    totalItems: 12,
+    status: 'ok',
+    degraded: false,
+    timestamp: new Date('2026-06-10T12:00:00.000Z'),
+  });
+
+  const state: TestPanelState = {
+    overview: null,
+    alerts: [],
+    convergenceAlerts: [],
+    freshnessSummary: null,
+    breakingAlerts: new Map(),
+    breakingExpiryTimer: null,
+    abortController: new AbortController(),
+    element: document.createElement('section'),
+    scenarioSummary: null,
+    lastRiskFingerprint: '',
+    setDataBadge: vi.fn(),
+    showError: vi.fn(),
+    render: vi.fn(),
+  };
+  document.body.append(state.element);
+
+  const panel = Object.assign(Object.create(StrategicRiskPanel.prototype), state) as StrategicRiskPanel;
+  const panelState = panel as unknown as TestPanelState;
+  const changed = await panel.refresh();
+
+  expect(changed).toBe(true);
+  expect(panelState.overview?.compositeScore).toBe(64);
+  expect(panelState.scenarioSummary).toMatchObject({ compositeScore: 64, elevatedCount: 3 });
+  expect(panelState.setDataBadge).toHaveBeenCalledWith('live', expect.stringMatching(/scenario/i));
+  expect(panelState.showError).not.toHaveBeenCalled();
+  expect(panelState.render).toHaveBeenCalledOnce();
 });

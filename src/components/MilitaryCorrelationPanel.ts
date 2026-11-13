@@ -20,9 +20,46 @@ function officialSourceLabel(label: string, sourceUrl: string): HTMLElement {
   }, label);
 }
 
+interface ForcePostureDummySection {
+  code: string;
+  label: string;
+  items: string[];
+}
+
+/** Placeholder service-branch briefing until live convergence cards arrive. */
+const FORCE_POSTURE_DUMMY_SECTIONS: ForcePostureDummySection[] = [
+  {
+    code: 'IA',
+    label: 'Indian Army',
+    items: [
+      'Mov of extra corridor forces esp 20 Mtn Div / 33Corps / EC mov to NC before indian strikes.',
+      'Elms ex 17 Corps (Strike Corps) mov from EC to Western front for rft of mech potential.',
+      'LRVs depl esp Brah Mos(346 and 1889 Barh Mos Msl Regts) along Western front.',
+    ],
+  },
+  {
+    code: 'IN',
+    label: 'Indian Navy',
+    items: [
+      'Loading of AC carrs at karvar a/w allied assets ( subs/frigates/ destroyeds mov from Mumbai, karvar and kochi; Mig-29k acs from hansa base)',
+      'Activity at Naval sp bases incl CSL (Cochin shipyard Ltd) and Eastern cost naval base.',
+    ],
+  },
+  {
+    code: 'IAF',
+    label: 'Indian Air Force',
+    items: [
+      'Fws placement of Hight Tech Acs: rafel acs ex 101 Sqn',
+      'UAVs / Loitering Munitions: monitoring of 3x Sqns(Awantipura, jammu & Bhatinda -WAC)',
+      'AWACS & AARs: simultaneous fit patterns from Ambala/ Agra',
+    ],
+  },
+];
+
 export class MilitaryCorrelationPanel extends CorrelationPanel {
   private officialActivity: CrossStraitActivitySnapshot | null;
   private officialActivitySupplement: HTMLElement | null | undefined;
+  private dummyBriefingSupplement: HTMLElement | null = null;
   private officialActivityDestroyed = false;
 
   constructor() {
@@ -39,11 +76,55 @@ export class MilitaryCorrelationPanel extends CorrelationPanel {
   }
 
   protected override renderSupplement(): HTMLElement | null {
+    const briefing = this.buildDummyBriefingSupplement();
+    const official = this.getOfficialActivitySupplement();
+    if (!briefing && !official) return null;
+    if (briefing && official) {
+      return h('div', { className: 'force-posture-supplements' }, briefing, official);
+    }
+    return briefing ?? official;
+  }
+
+  private getOfficialActivitySupplement(): HTMLElement | null {
     if (this.officialActivitySupplement !== undefined) {
       return this.officialActivitySupplement;
     }
     this.officialActivitySupplement = this.buildOfficialActivitySupplement();
     return this.officialActivitySupplement;
+  }
+
+  private buildDummyBriefingSupplement(): HTMLElement {
+    if (this.dummyBriefingSupplement) return this.dummyBriefingSupplement;
+
+    const sections = FORCE_POSTURE_DUMMY_SECTIONS.map((section) =>
+      h('section', {
+        className: 'force-posture-dummy-section',
+        style: 'margin-bottom:10px;',
+      },
+      h('div', {
+        style: 'display:flex;align-items:baseline;gap:6px;margin-bottom:4px;',
+      },
+      h('strong', {
+        style: 'font-size:calc(11px * var(--wm-panel-effective-scale, 1));letter-spacing:0.04em;',
+      }, `(${section.code})`),
+      h('span', {
+        style: 'font-size:calc(10px * var(--wm-panel-effective-scale, 1));opacity:0.7;',
+      }, section.label)),
+      h('ul', {
+        style: 'margin:0;padding-left:16px;display:grid;gap:4px;',
+      }, ...section.items.map((item) =>
+        h('li', {
+          style: 'font-size:calc(10px * var(--wm-panel-effective-scale, 1));line-height:1.4;opacity:0.88;',
+        }, item),
+      ))),
+    );
+
+    this.dummyBriefingSupplement = h('section', {
+      className: 'force-posture-dummy-briefing',
+      style: 'padding:8px;margin-bottom:8px;border:1px solid rgba(255,152,0,0.28);border-radius:6px;background:rgba(255,152,0,0.06);',
+    }, ...sections);
+
+    return this.dummyBriefingSupplement;
   }
 
   private buildOfficialActivitySupplement(): HTMLElement | null {
