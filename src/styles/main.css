@@ -18184,6 +18184,12 @@ button.popup-link {
   overflow: visible;
 }
 
+/* Mounted beside Probable Scenarios methodology `?` in the panel header. */
+.panel-header-left > .intel-findings-badge {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+}
+
 .intel-findings-badge:hover {
   background: var(--overlay-light);
   border-color: var(--accent);

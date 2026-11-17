@@ -13,9 +13,17 @@ test.describe('keyword spike modal/badge flow', () => {
       const correlation = await import('/src/services/correlation.ts');
 
       const previousConfig = trending.getTrendingConfig();
-      const headerRight = document.createElement('div');
-      headerRight.className = 'header-right';
-      document.body.appendChild(headerRight);
+      const panel = document.createElement('div');
+      panel.dataset.panel = 'threat-timeline';
+      panel.innerHTML = `
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <span class="panel-title">Probable Scenarios</span>
+            <div class="panel-info-wrapper"><button type="button" class="panel-info-btn">?</button></div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(panel);
 
       const modal = new SignalModal();
       const badge = new IntelligenceGapBadge();

@@ -73,7 +73,8 @@ test.describe('header CLS reservations', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.locator('.header').waitFor();
     await page.locator('.unified-settings-btn').waitFor({ timeout: 20000 });
-    await page.locator('.intel-findings-badge').waitFor({ timeout: 20000 });
+    // Threat-indicators count lives on Probable Scenarios, not the app header.
+    await page.locator('[data-panel="threat-timeline"] .intel-findings-badge').waitFor({ timeout: 20000 });
     await page.evaluate(() => new Promise<void>((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     }));

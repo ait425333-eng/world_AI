@@ -78,8 +78,12 @@ export class IntelligenceFindingsBadge {
   private findingsModalOverlay: HTMLElement | null = null;
   private findingsModalEscListener: ((e: KeyboardEvent) => void) | null = null;
   private findingsModalTrap: FocusTrap | null = null;
+  private panelMountObserver: MutationObserver | null = null;
   private updateEpoch = 0;
   private destroyed = false;
+
+  private static readonly PANEL_MOUNT_SELECTOR =
+    '[data-panel="threat-timeline"] .panel-header-left';
 
   constructor() {
     this.enabled = IntelligenceFindingsBadge.getStoredEnabledState();
@@ -216,6 +220,7 @@ export class IntelligenceFindingsBadge {
         clearInterval(this.refreshInterval);
         this.refreshInterval = null;
       }
+      this.detachPanelMountObserver();
       this.closeDropdown();
       this.dismissContextMenu();
       this.badge.remove();
@@ -256,12 +261,58 @@ export class IntelligenceFindingsBadge {
     }
   }
 
+  private resolveMountHost(): HTMLElement | null {
+    return document.querySelector<HTMLElement>(IntelligenceFindingsBadge.PANEL_MOUNT_SELECTOR);
+  }
+
+  /** Place the threat-indicators count immediately after the Probable Scenarios `?` control. */
   private mount(): void {
-    const headerRight = document.querySelector('.header-right');
-    if (headerRight) {
-      this.badge.appendChild(this.dropdown);
-      headerRight.insertBefore(this.badge, headerRight.firstChild);
+    if (this.destroyed || !this.enabled) return;
+
+    const host = this.resolveMountHost();
+    if (!host) {
+      this.ensurePanelMountObserver();
+      return;
     }
+
+    if (!this.badge.contains(this.dropdown)) {
+      this.badge.appendChild(this.dropdown);
+    }
+
+    const info = host.querySelector('.panel-info-wrapper');
+    if (info) {
+      if (this.badge.previousElementSibling !== info || this.badge.parentElement !== host) {
+        info.after(this.badge);
+      }
+    } else if (this.badge.parentElement !== host) {
+      host.appendChild(this.badge);
+    }
+
+    this.ensurePanelMountObserver();
+  }
+
+  private ensurePanelMountObserver(): void {
+    if (this.panelMountObserver || this.destroyed || typeof MutationObserver === 'undefined') return;
+
+    this.panelMountObserver = new MutationObserver(() => {
+      if (this.destroyed || !this.enabled) return;
+      const host = this.resolveMountHost();
+      if (!host) return;
+      if (this.badge.parentElement === host) {
+        const info = host.querySelector('.panel-info-wrapper');
+        if (info && this.badge.previousElementSibling !== info) {
+          info.after(this.badge);
+        }
+        return;
+      }
+      this.mount();
+    });
+    this.panelMountObserver.observe(document.body, { childList: true, subtree: true });
+  }
+
+  private detachPanelMountObserver(): void {
+    this.panelMountObserver?.disconnect();
+    this.panelMountObserver = null;
   }
 
   private startRefresh(): void {
@@ -634,6 +685,7 @@ export class IntelligenceFindingsBadge {
     if (this.pendingUpdateFrame) {
       cancelAnimationFrame(this.pendingUpdateFrame);
     }
+    this.detachPanelMountObserver();
     this.dismissContextMenu();
     this.dismissFindingsModal();
     document.removeEventListener('wm:intelligence-updated', this.boundUpdate);
